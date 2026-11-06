@@ -1,6 +1,6 @@
 'use strict';
 /* ===== Social Eyewear Game — ร้านแว่นตาจำลอง ===== */
-const GAME_VERSION='3.2';
+const GAME_VERSION='4.0';
 const W=1536,H=1024,SCALE=1,MW=900,MH=680;
 const $=s=>document.querySelector(s);
 const fmt=n=>'฿'+Math.round(n).toLocaleString('en-US');
@@ -199,9 +199,9 @@ const cloud={kind:null,db:null,ready:null,rev:0,conflict:false,conflictShown:fal
  label(){if(this.kind==='local'||!this.kind)return'เซฟในเครื่องนี้เท่านั้น';return{conflict:'มีเครื่องอื่นเซฟรหัสนี้ใหม่กว่า',offline:'เซฟกลางไม่สำเร็จ เก็บไว้ในเครื่องก่อน',readonly:'ลิงก์นี้ดูเซฟได้ แต่บันทึกกลางไม่ได้'}[this.state]||'เซฟกลาง โหลดจากเครื่องไหนก็ได้';}
 };
 async function hasSave(code){await cloud.init();if(cloud.kind!=='local'){await cloud.flush();if(await cloud.get(code))return true;}return !!store.get(KEY(code));}
-function saveGame(quiet,force){if(!S)return false;S.savedAt=Date.now();const code=S.code,obj=JSON.parse(JSON.stringify(S));
+function saveGame(quiet,force){if(!S||(S.party&&!(PT&&PT.host)))return false;S.savedAt=Date.now();const code=S.code,obj=JSON.parse(JSON.stringify(S));
  const ok=store.set(KEY(code),JSON.stringify(Object.assign({},obj,{rev:cloud.rev})));if(ok)store.set(LAST,code);
- const done=S.mp?Promise.resolve():cloud.send(code,obj,force,!quiet||!!force||document.hidden);
+ const done=S.mp||S.party?Promise.resolve():cloud.send(code,obj,force,!quiet||!!force||document.hidden);
  if(!quiet){if(cloud.kind==='local'||!cloud.kind)toast(ok?`บันทึกในเครื่องนี้แล้ว · รหัส ${code}`:'บันทึกไม่ได้ เบราว์เซอร์นี้ปิดพื้นที่เก็บข้อมูล');
   else done.then(()=>{if(cloud.state==='saved')toast(`เซฟกลางแล้ว · ใส่รหัส ${code} โหลดได้ทุกเครื่อง`);else toast(cloud.label());});}
  return ok;}
@@ -228,21 +228,21 @@ function closeModal(){const m=$('#modal');m.hidden=true;m.innerHTML='';if(m._p){
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden&&!$('#modal')._o.lock)closeModal();});
 
 /* ---------- title & code flow ---------- */
-function showTitle(){clearInterval(mpTimer);clearInterval(lobbyT);DAY_LEN=150;screen='title';paused=0;S=null;G=null;closeModal();$('#play').hidden=true;const t=$('#title');t.hidden=false;
+function showTitle(){partyStop();clearInterval(mpTimer);clearInterval(lobbyT);DAY_LEN=150;screen='title';paused=0;S=null;G=null;closeModal();$('#play').hidden=true;const t=$('#title');t.hidden=false;
  const last=store.get(LAST);
  t.innerHTML=`<img class="scene" src="${IMG.title.src}" alt="หน้าร้าน Social Eyewear พร้อมทีมงานและลูกค้า">
  <nav aria-label="เมนูหลัก">
   <button class="imgbtn" id="bStart" title="${last?'เล่นต่อรหัส '+last:'เริ่มเล่น'}">${sprHTML('btn_start',150)}<span class="vh">START เล่นต่อ</span></button>
   <button class="imgbtn" id="bNew">${sprHTML('btn_new',80)}<span class="vh">NEW GAME เกมใหม่</span></button>
   <button class="imgbtn" id="bLoad">${sprHTML('btn_load',80)}<span class="vh">LOAD GAME โหลดเซฟ</span></button>
-  <button class="btn violet mpbtn" id="bMp">โหมด VS</button>
+  <span class="moderow"><button class="imgbtn" id="bMp">${sprHTML('btn_vs',108)}<span class="vh">โหมด VS</span></button><button class="imgbtn" id="bParty">${sprHTML('btn_party',108)}<span class="vh">โหมด PARTY</span></button></span>
   <button class="imgbtn" id="bOpt">${sprHTML('btn_opt',80)}<span class="vh">OPTION ตั้งค่า</span></button>
   <span class="mini verline">เวอร์ชัน ${GAME_VERSION}</span>
  </nav>`;
  $('#bStart').onclick=async()=>{if(!last)return pinDialog('new');toast('กำลังโหลดเซฟ…');const r=await loadGame(last);if(r==='ok')startPlay();else if(r==='corrupt'){toast('เซฟรหัสนี้เสีย อ่านไม่ได้ เกมไม่ได้เขียนทับข้อมูลเดิม');}else pinDialog(r==='error'?'load':'new');};
  $('#bNew').onclick=()=>pinDialog('new');
  $('#bLoad').onclick=()=>pinDialog('load');
- $('#bMp').onclick=()=>mpMenu();
+ $('#bMp').onclick=()=>mpMenu();$('#bParty').onclick=()=>partyMenu();
  $('#bOpt').onclick=()=>optionDialog();
 }
 function pinDialog(mode){let pin='';
@@ -293,7 +293,7 @@ function optionDialog(){
 async function showTitleThen(o){closeModal();await cloud.init();await cloud.flush();applySave(o.code,JSON.stringify(o));startPlay(false,true);toast(`นำเข้าเซฟรหัส ${o.code} แล้ว`);}
 
 /* ---------- start ---------- */
-function startPlay(isNew,force){G=null;DAY_LEN=(S.mp&&S.mp.dayLen)||150;screen='play';railKey='';paused=0;G=newLive();$('#title').hidden=true;$('#play').hidden=false;
+function startPlay(isNew,force){G=null;DAY_LEN=(S.mp&&S.mp.dayLen)||S.partyDay||150;screen='play';railKey='';paused=0;G=newLive();$('#title').hidden=true;$('#play').hidden=false;
  S.staff.forEach(addWorker);if(isNew||force||cloud.needUpload)saveGame(true,force);cloud.needUpload=false;sdOf('owner');applyLayout();refreshQuests();checkTrophies();renderRail();
  if(!isNew&&!window.__qaNew)toast(`ยินดีต้อนรับกลับ · วันที่ ${dayInMonth(S.day)} เดือน ${monthOf(S.day)}`);}
 function welcome(){openModal(`<div class="sheethead"><h2>เปิดร้านวันแรก</h2></div>
@@ -345,7 +345,7 @@ function toExam(c){if(c.phase!=='idle'||step(c)!=='exam')return false;
  const i=[0,1].slice(0,chairCount()).find(n=>!G.chairs[n]);
  if(i===undefined){toast('ห้องตรวจไม่ว่าง รออีกนิด');return false;}
  G.chairs[i]=c;c.chair=i;c.tx=CHAIRS[i].x;c.ty=CHAIRS[i].y+22;c.phase='walk';c.then='atChair';beep('ok');
- if(!G.workers.some(w=>w.role==='od'&&!isTraining(w.key)))assignExamPlayer(c);
+ if(!S.party&&!G.workers.some(w=>w.role==='od'&&!isTraining(w.key)))assignExamPlayer(c);
  return true;}
 function assignExamPlayer(c){if(c.owner)return;c.owner='player';const chair=CHAIRS[c.chair];
  pushTask({kind:'exam',c,x:chair.sx,y:chair.sy,dur:examTime(1),label:'วัดสายตา'});}
@@ -483,7 +483,7 @@ function workerTick(w,dt){
 
 /* ---------- main update ---------- */
 function update(dt){
- mpTick(dt);tickRandom();updatePenalty();watchdog(dt);checkGoal();
+ if(S.party)partyTick(dt);mpTick(dt);tickRandom();updatePenalty();watchdog(dt);checkGoal();
  G.saveT+=dt;if(G.saveT>30){G.saveT=0;saveGame(true);}
  if(G.event)tickEvent(dt);
  if(!G.closing||G.event){if(!G.event)S.dayT+=dt;
@@ -505,13 +505,13 @@ function update(dt){
   if(c.pat<=0&&c.phase!=='walk')leave(c,false);
  });
  G.cust=G.cust.filter(c=>!c.gone);
- runPlayerTask(dt);
+ if(!S.party)runPlayerTask(dt);
  G.workers.forEach(w=>workerTick(w,dt));
  G.deliveries.forEach(d=>d.t-=dt);
  const arrived=G.deliveries.filter(d=>d.t<=0);
  if(arrived.length){arrived.forEach(d=>{lensState(d.id).stock+=d.qty;log(`${lensBrand(d.id)} ส่ง ${LENSES[d.id].name} ${d.qty} คู่ ถึงร้านแล้ว`,'g');});beep('buy');G.deliveries=G.deliveries.filter(d=>d.t>0);renderRail();}
  G.fx.forEach(f=>f.t-=dt);G.fx=G.fx.filter(f=>f.t>0);
- if(G.closing&&!G.event&&!G.cust.length&&!G.summary&&!paused){G.summary=true;endDay();}
+ if(G.closing&&!G.event&&!G.cust.length&&!G.summary&&(!paused||S.party)){G.summary=true;endDay();}
 }
 
 /* ---------- draw ---------- */
@@ -540,7 +540,7 @@ function draw(){
  /* เคาน์เตอร์ */
  const cb=own('cnt3')?'cb7':own('cnt2')?'cb6':'cb5';add(cb,1335,855,70);on('pos',1335,806,44,856);
  G.cust.forEach(c=>list.push({y:c.y,fn:()=>drawActor(c,c.k,c.fade)}));
- const p=G.player;list.push({y:p.y,fn:()=>drawActor(p,playerKey(),1,true)});
+ const p=G.player;if(S.party)drawAvatars(list);else list.push({y:p.y,fn:()=>drawActor(p,playerKey(),1,true)});
  G.workers.filter(w=>!isTraining(w.key)).forEach(w=>list.push({y:w.y,fn:()=>drawActor(w,w.key,1)}));
  list.sort((a,b)=>a.y-b.y).forEach(o=>o.fn());
  // labels: zones when dragging
@@ -585,6 +585,7 @@ function drawCustHud(c){if(c.phase==='leaving')return;if(c.phase==='angry'){draw
  if(k)drawIcon(k,c.x,y-14,36*pulse);
  if(c.type)label(c.x,y+26,CTYPE[c.type].tag,CTYPE[c.type].col,'#fff',16);
  const col=c.pat>55?'#2f9e3f':c.pat>25?'#f08a12':'#d8324a';bar(c.x-26,y+6,52,7,c.pat/100,col);
+ if(S.party&&isMine(c)){ctx.strokeStyle='#2fd05f';ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(c.x,c.y-1,32,11,0,0,Math.PI*2);ctx.stroke();}
  if(hover===c){ctx.strokeStyle='#f6b21b';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(c.x,c.y-1,30,10,0,0,Math.PI*2);ctx.stroke();}
 }
 function drawIcon(k,x,y,s){const a=ATLAS.pos[k];if(!a)return;const r=s/Math.max(a[2],a[3]);spr(k,x-a[2]*r/2,y-a[3]*r/2,a[2]*r,a[3]*r);}
@@ -596,7 +597,7 @@ function evPos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left-
 function hitCust(p){const a=[...G.cust].sort((x,y)=>y.y-x.y);return a.find(c=>c.phase!=='leaving'&&c.phase!=='angry'&&Math.abs(p.x-c.x)<42&&p.y<c.y+8&&p.y>c.y-150);}
 function inZone(p,z){return p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h;}
 function initInput(){
- cv.addEventListener('pointerdown',e=>{if(arrange){arrangeClick(evPos(e));return;}if(paused||!G)return;const p=evPos(e);if(G.mobile){mobileClick(p);return;}const c=hitCust(p);
+ cv.addEventListener('pointerdown',e=>{if(arrange){arrangeClick(evPos(e));return;}if(!G)return;if(S&&S.party){if($('#modal').hidden)partyClick(evPos(e));return;}if(paused)return;const p=evPos(e);if(G.mobile){mobileClick(p);return;}const c=hitCust(p);
   if(c&&c.phase==='idle'&&!c.owner&&(step(c)==='exam'||step(c)==='pay')){dragging={c,x:p.x,y:p.y,sx:p.x,sy:p.y,moved:false};cv.setPointerCapture(e.pointerId);return;}
   if(c){onCustomerClick(c);return;}
   if(inZone(p,ZONE.lab)){onLabClick();return;}
@@ -664,7 +665,7 @@ function hoyaDialog(focus){
  m.querySelectorAll('[data-list]').forEach(b=>b.onclick=()=>order(b.dataset.list,true));
  m.querySelectorAll('[data-order]').forEach(b=>b.onclick=()=>order(b.dataset.order,false));
 }
-function deliverTime(){return (own('van')?7:14)*((G&&G.dayFx&&G.dayFx.deliver)||1)*(S.mpDays&&S.mpDays.slow>0?3:1);}
+function deliverTime(){if(S.party)return .1;return (own('van')?7:14)*((G&&G.dayFx&&G.dayFx.deliver)||1)*(S.mpDays&&S.mpDays.slow>0?3:1);}
 function order(id,list){const l=LENSES[id],s=lensState(id),cost=l.cost*orderQty+(list?l.fee:0);if(S.money<cost)return;
  spend('lensBuy',cost);G.today.buy+=cost;if(list)s.listed=true;G.deliveries.push({id,qty:orderQty,t:deliverTime()});beep('buy');
  log(`สั่ง ${l.name} ${orderQty} คู่ กับ ${lensBrand(id)}`);hoyaDialog(id);renderRail();}
@@ -721,6 +722,7 @@ function openDay(){if(S.mp&&mpDayOver()){mpFinish();return;}mpNewDay();G.today=b
  if(S.closed>0){S.closed--;toast('วันนี้ร้านปิด พาทีมไปเที่ยว');log('ร้านปิด 1 วัน');G.closing=true;S.dayT=DAY_LEN;renderRail();return;}
  if(S.buzz>0)S.buzz--;rollRandom();refreshQuests();processAppts();renderRail();
  const sc=S.hosp.sched&&MISSION[S.hosp.sched];if(sc){if(missionReady(sc)){startMobile(sc);return;}S.hosp.sched=null;toast('ยกเลิกการออกหน่วย ทีมหรืออุปกรณ์ไม่ครบ');}
+ if(S.party)return;
  if(!window.__qaNoCall&&dayInMonth(S.day)>=6&&S.cardM!==monthOf(S.day)){S.cardM=monthOf(S.day);cardDialog('กลางเดือน',()=>{});return;}
  hospitalCall();}
 function absentNote(){const a=S.staff.filter(isTraining).map(k=>`${staffNameOf(k)} ${G.mpT&&G.mpT.strike>0?'ประท้วง':G.dayFx&&G.dayFx.sick===k?'ลาป่วย':'อบรมอีก '+(((S.staffData[k]||{}).training||{}).left||0)+' วัน'}`);return a.length?`ไม่อยู่ร้าน: ${a.join(', ')} · `:'';}
@@ -731,7 +733,7 @@ function afterDayMenu(){openModal(`<div class="sheethead"><h2>พร้อมเ
 
 /* ---------- side rail ---------- */
 function stars(){const n=Math.round(S.rep*2)/2;let s='';for(let i=1;i<=5;i++)s+=n>=i?'★':n>=i-.5?'⯪':'☆';return s;}
-function hintText(){if(G.mobile)return mobileHint();const idle=G.cust.filter(c=>c.phase==='idle'&&!c.owner);
+function hintText(){if(S.party)return partyHint();if(G.mobile)return mobileHint();const idle=G.cust.filter(c=>c.phase==='idle'&&!c.owner);
  if(G.summary)return'เตรียมร้านให้พร้อม แล้วกดปุ่มเปิดร้านด้านขวา';if(G.closing)return G.cust.length?'ปิดรับลูกค้าใหม่แล้ว ดูแลคนที่เหลือให้เสร็จ':'เลิกงาน!';
  const f=G.queue[0];if(f&&f.phase==='counter'&&!f.owner)return'คลิกลูกค้าที่เคาน์เตอร์เพื่อคิดเงิน';
  if(G.jobs.some(j=>!j.owner))return'คลิกโต๊ะช่างเพื่อประกอบแว่น';
@@ -749,8 +751,8 @@ function renderRail(){if(!S||!G||screen!=='play')return;
   $('#rOpen').onclick=()=>{closeModal();openDay();};$('#rClose').onclick=closeRoomDialog;$('#rAtk').onclick=attackDialog;$('#rBank').onclick=()=>bankMonth(()=>{},true);$('#rQuest').onclick=questDialog;$('#rFill').onclick=fillAll;$('#rLay').onclick=arrangeMode;$('#rHosp').onclick=()=>hospitalDialog();$('#rTrain').onclick=trainDialog;$('#rMap').onclick=mapDialog;$('#rAcct').onclick=accountDialog;$('#rTro').onclick=trophyDialog;$('#rShop').onclick=shopDialog;$('#rStaff').onclick=staffDialog;$('#rHoya').onclick=()=>hoyaDialog();$('#rSave').onclick=()=>saveGame();
   $('#rOpt').onclick=optionDialog;$('#rMenu').onclick=()=>{saveGame(true);railKey='';showTitle();};}
  $('#rFill').hidden=!own('autostock');$('#rClose').hidden=!isHost();{const ra=$('#rAtk');ra.hidden=!S.mp;if(S.mp){const t=`การ์ดในมือ ${hand().length}/${HAND_MAX}`;if(ra.textContent!==t)ra.textContent=t;}}
- const ob=$('#rOpen');const canOpen=!!G.summary&&!G.mobile&&!G.event;ob.hidden=!canOpen;if(canOpen)ob.textContent=`เปิดร้านวันที่ ${dayInMonth(S.day)}/${MONTH_DAYS}`;
- const rm=$('#rMp');rm.hidden=!S.mp;if(S.mp)setHTML(rm,mpLine());
+ const ob=$('#rOpen');const canOpen=!!G.summary&&!G.mobile&&!G.event&&(!S.party||(PT&&PT.host));ob.hidden=!canOpen;if(canOpen)ob.textContent=`เปิดร้านวันที่ ${dayInMonth(S.day)}/${MONTH_DAYS}`;
+ const rm=$('#rMp');rm.hidden=!S.mp&&!S.party;if(S.mp)setHTML(rm,mpLine());if(S.party){setHTML(rm,ptPanel());rm.onclick=ptPanelClick;const hideB=!PT||!PT.host||!G.summary;$('#rail').classList.toggle('locked',hideB);['rStaff','rMap','rHosp','rLay','rSave','rMenu','rQuest','rClose'].forEach(i=>{const b=$('#'+i);if(b)b.hidden=true;});}
  const ht=hintText(),he=$('#hint');if(he.textContent!==ht)he.textContent=ht;
  setHTML($('#rStat'),`<div class="statrow"><span class="money">${fmt(S.money)}</span><span class="stars" title="ชื่อเสียงร้าน ${S.rep.toFixed(1)}/5">${stars()}</span></div>
  <div class="statrow mini" style="margin-top:4px"><span>${esc(S.shopName)} · เดือน ${monthOf(S.day)} วันที่ ${dayInMonth(S.day)}/${MONTH_DAYS} · รหัส ${S.code}</span><span>${G.closing?'ปิดรับลูกค้า':'เหลือ '+Math.ceil(Math.max(0,DAY_LEN-S.dayT))+' วิ'}</span></div>
@@ -775,7 +777,8 @@ function frame(ts){requestAnimationFrame(frame);try{const raw=(ts-last)||16;cons
  if(!skipFrame)slowAvg=slowAvg*.95+Math.min(raw,100)*.05;odd=!odd;skipFrame=slowAvg>24&&odd;
  if(screen==='play'&&S&&G&&cloud.conflict&&!cloud.conflictShown&&$('#modal').hidden)conflictDialog();
  if(screen==='play'&&S&&G&&G.mobile){if(!paused)updateMobile(dt);if(G.mobile&&$('#modal').hidden&&!skipFrame)drawMobile();railT+=dt;if(railT>.5){railT=0;renderRail();}}
- else if(screen==='play'&&S&&G){if(!paused)update(dt);if($('#modal').hidden&&!skipFrame)draw();railT+=dt;if(railT>.5){railT=0;renderRail();}}
+ else if(screen==='play'&&S&&G&&S.party&&PT&&!PT.host){partyLerp(dt);if(!skipFrame)draw();railT+=dt;if(railT>.5){railT=0;renderRail();}}
+ else if(screen==='play'&&S&&G){if(!paused||S.party)update(dt);if(($('#modal').hidden||S.party)&&!skipFrame)draw();railT+=dt;if(railT>.5){railT=0;renderRail();}}
 }catch(e){console.error(e);if(frameErrs++<3&&G)toast('เกิดข้อผิดพลาดเล็กน้อย เกมเล่นต่อได้');}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&S&&G)saveGame(true);});
 window.addEventListener('pagehide',()=>{if(S&&G)saveGame(true);});
@@ -791,4 +794,4 @@ async function boot(){ATLAS=window.ATLAS_DATA;
  delete window.IMG_ATLAS;delete window.IMG_SHOP;delete window.IMG_TITLE;delete window.IMG_MAP;
  cloud.init();showTitle();requestAnimationFrame(frame);preloadSprites();}
 boot();
-window.__g={vsDraw,ATK,DEF,applyEvent,mpSend,mpPoll,attackDialog,mpDayOver,mpFinish,mpMul,get mpLast(){return mpLast;},sprReady:()=>sprDone,sprTotal:()=>Object.keys(ATLAS.pos).length,drawOnce:()=>draw(),completeExam,fillAll,fillSummary,hospCool,startEvent,financeMonth,bankMonth,cardDialog,GOODC,BADC,checkGoal,lvSpawn,lvPat,netWorth,hireDialog,setupDialog,arrangeMode,endArrange,arrangeClick,eqMap,watchdog,mobileClick,renameDialog,staffNameOf,makeAppt,processAppts,showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};
+window.__g={get PT(){return PT;},showTask,relTask,vsDraw,ATK,DEF,applyEvent,mpSend,mpPoll,attackDialog,mpDayOver,mpFinish,mpMul,get mpLast(){return mpLast;},sprReady:()=>sprDone,sprTotal:()=>Object.keys(ATLAS.pos).length,drawOnce:()=>draw(),completeExam,fillAll,fillSummary,hospCool,startEvent,financeMonth,bankMonth,cardDialog,GOODC,BADC,checkGoal,lvSpawn,lvPat,netWorth,hireDialog,setupDialog,arrangeMode,endArrange,arrangeClick,eqMap,watchdog,mobileClick,renameDialog,staffNameOf,makeAppt,processAppts,showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};

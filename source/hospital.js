@@ -92,7 +92,7 @@ function kitRow(k){const d=KIT[k],o=hasKit(k);return `<div class="kit ${o?'owned
 
 /* ---------- ฉากจับเวลา ---------- */
 const MSEATS=[];for(let r=0;r<2;r++)for(let c=0;c<5;c++)MSEATS.push({x:130+c*160,y:r?632:482});
-function startMobile(m){S.hosp.sched=null;S.hosp.last[m.id]=S.day;S.hosp.lastM=monthOf(S.day);const t=teamFor(m);G.cust=[];G.queue=[];G.jobs=[];G.chairs=[null,null];G.workers.forEach(w=>{w.task=null;w.prog=0;});G.returning=[];G.event=null;G.player.carry=null;G.player.tasks=[];G.player.task=null;
+function startMobile(m){S.hosp.sched=null;const t=teamFor(m);if(!t.od[0]||!t.od[1]||!t.sl[0]){log(`ยกเลิกออกหน่วย ${m.hospital} ทีมงานไม่ครบ`,'r');toast('ยกเลิกออกหน่วย เพราะทีมงานไม่ครบ');return;}S.hosp.last[m.id]=S.day;S.hosp.lastM=monthOf(S.day);G.cust=[];G.queue=[];G.jobs=[];G.chairs=[null,null];G.workers.forEach(w=>{w.task=null;w.prog=0;});G.returning=[];G.event=null;G.player.carry=null;G.player.tasks=[];G.player.task=null;
  const mk=(key,role,x,y)=>({key,role,x,y,hx:x,hy:y,dir:'f',flip:false,t:0,q:[],task:null,prog:0,moving:false});
  const staff=[mk(t.od[0],'od',235,345),mk(t.od[1],'od',665,345),mk(t.sl[0],'sales',450,338)];
  G.mobile={m,t:m.time+(hasKit('truck')?20:0),staff,seats:Array(10).fill(null),sel:null,spawned:0,spawnT:.2,recs:[],sales:0,missed:0,advice:0,started:false,count:3,fx:[]};

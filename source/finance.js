@@ -41,7 +41,7 @@ function drawArrange(){ctx.save();ctx.lineWidth=3;const ring=(s,w,h,on)=>{ctx.st
 
 /* ===== กันค้าง: คืนงานที่ไม่มีคนทำ ===== */
 let wdT=0;
-function watchdog(dt){wdT+=dt;if(wdT<2)return;wdT=0;const p=G.player,mine=new Set();[p.task,...p.tasks].forEach(t=>{if(t&&t.c)mine.add(t.c);if(t&&t.j)mine.add(t.j);});
+function watchdog(dt){if(S.party)return;wdT+=dt;if(wdT<2)return;wdT=0;const p=G.player,mine=new Set();[p.task,...p.tasks].forEach(t=>{if(t&&t.c)mine.add(t.c);if(t&&t.j)mine.add(t.j);});
  const work=new Set();G.workers.forEach(w=>{if(w.task){if(w.task.c)work.add(w.task.c);if(w.task.j)work.add(w.task.j);}});
  G.cust.forEach(c=>{if(c.owner==='player'&&!mine.has(c))c.owner=null;else if(c.owner&&c.owner!=='player'&&!work.has(c))c.owner=null;});
  G.jobs.forEach(j=>{if(j.owner==='player'&&!mine.has(j))j.owner=null;else if(j.owner&&j.owner!=='player'&&!work.has(j))j.owner=null;});

@@ -29,7 +29,7 @@ function navWalk(e,tx,ty,speed,dt){speed*=W/MW;const c=cellOf(tx,ty),key=c[0]+',
 const KEYS={};
 const KEYMAP={w:[0,-1],arrowup:[0,-1],s:[0,1],arrowdown:[0,1],a:[-1,0],arrowleft:[-1,0],d:[1,0],arrowright:[1,0]};
 function typing(e){const t=e.target&&e.target.tagName;return t==='INPUT'||t==='TEXTAREA';}
-document.addEventListener('keydown',e=>{if(typing(e)||!G||!S||screen!=='play')return;const k=e.key.toLowerCase();
+document.addEventListener('keydown',e=>{if(typing(e)||!G||!S||screen!=='play'||S.party)return;const k=e.key.toLowerCase();
  if(k==='escape'&&$('#modal').hidden){pauseDialog();return;}
  if(!$('#modal').hidden||G.mobile)return;
  if(KEYMAP[k]){KEYS[k]=1;e.preventDefault();}if(k==='shift')KEYS.shift=1;if(k==='e'&&!e.repeat&&!paused)interact();});
@@ -107,7 +107,7 @@ const RANDOM=[
  {id:'friend',spr:'ev_friend',title:'ลูกค้าแนะนำเพื่อน',say:'ลูกค้าเก่าบอกต่อเพื่อน ๆ จะมีลูกค้าเพิ่มอีก 2 คน',choices:[{t:'ดีเลย',done:'เพื่อนลูกค้ากำลังเดินมาที่ร้าน',run:()=>{G.spawn=.5;G.extra=2;}}]}
 ];
 let RAND_ON=true;
-function rollRandom(){G.dayFx={};G.dayNote='';G.randT=0;if(!RAND_ON||S.day<2||S.day-S.lastRandom<2||Math.random()>.55)return;S.lastRandom=S.day;G.randT=rnd(15,DAY_LEN-40);}
+function rollRandom(){G.dayFx={};G.dayNote='';G.randT=0;if(S.party)return;if(!RAND_ON||S.day<2||S.day-S.lastRandom<2||Math.random()>.55)return;S.lastRandom=S.day;G.randT=rnd(15,DAY_LEN-40);}
 function tickRandom(){if(!G.randT||G.closing||G.event||S.dayT<G.randT)return;G.randT=0;showRandom();}
 function showRandom(id){const e=id?RANDOM.find(x=>x.id===id):pick(RANDOM.filter(x=>!x.when||x.when()));if(!e)return;
  if(e.run)e.run();const say=typeof e.say==='function'?e.say():e.say;softPlay(e.bad?'bad':'buy');

@@ -37,7 +37,7 @@ function mpForm(host){let g='m',rule={type:'years',years:1},dayLen=60,max=3;cons
   const me={name:cleanName($('#mpOwner').value,20)||'ผู้เล่น',shop:cleanName($('#mpShop').value,24)||'ร้านของ '+(cleanName($('#mpOwner').value,20)||'ผู้เล่น'),gender:g};store.set('socialeyewear.mp.name',me.name);err.textContent='กำลังเชื่อมต่อ…';
   try{const id=mpMyId(code);
    if(host){const ok=await net.create(code,{code,host:id,rule,dayLen,max,status:'lobby'});if(!ok){err.textContent=`รหัส ${code} มีคนใช้แล้ว เปลี่ยนรหัสใหม่`;return;}}
-   const st=await net.get(code);if(!st.meta){err.textContent=`ไม่พบห้องรหัส ${code}`;return;}
+   const st=await net.get(code);if(!st.meta||st.meta.mode==='party'){err.textContent=`ไม่พบห้อง VS รหัส ${code}`;return;}
    const inRoom=!!st.players[id];
    if(st.meta.status!=='lobby'&&!inRoom){err.textContent='ห้องนี้เริ่มเล่นไปแล้ว';return;}
    if(!inRoom&&Object.keys(st.players).length>=(st.meta.max||MP_MAX)){err.textContent=`ห้องเต็ม ${st.meta.max||MP_MAX} คนแล้ว`;return;}

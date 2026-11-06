@@ -184,7 +184,7 @@ function finishEvent(){const e=G.event,r=RIVAL[e.id];G.event=null;
  <div class="row"><button class="btn gold" data-c="1">กลับไปขายต่อ</button></div>`,{lock:true});
  $('#modal [data-c]').onclick=closeModal;renderRail();}
 function drawEventHud(){const e=G.event;if(!e)return;const rows=[...e.rows.map(x=>({n:x.name,v:x.sales})),{n:'ร้านเรา',v:e.me,me:1}].sort((a,b)=>b.v-a.v);
- const x=250,y=8,w=400,h=26+rows.length*22;ctx.fillStyle='rgba(22,32,74,.92)';ctx.fillRect(x,y,w,h);
+ const x=(W-400)/2,y=8,w=400,h=26+rows.length*22;ctx.fillStyle='rgba(22,32,74,.92)';ctx.fillRect(x,y,w,h);
  ctx.font='500 15px Mitr,"Noto Sans Thai",Tahoma,sans-serif';ctx.fillStyle='#ffd34d';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`${EVMODES[e.mode].name} · เหลือ ${Math.ceil(e.t)} วินาที`,x+w/2,y+14);
  const mx=Math.max(1,...rows.map(r=>r.v));rows.forEach((r,i)=>{const yy=y+28+i*22;ctx.textAlign='left';ctx.font='400 13px Mitr,"Noto Sans Thai",Tahoma,sans-serif';ctx.fillStyle=r.me?'#ffd34d':'#fff';ctx.fillText(`${i+1}. ${r.n}`,x+10,yy+7);
   ctx.fillStyle='#3a4678';ctx.fillRect(x+130,yy+1,170,12);ctx.fillStyle=r.me?'#f6b21b':'#6fa3ff';ctx.fillRect(x+130,yy+1,170*r.v/mx,12);ctx.textAlign='right';ctx.fillStyle='#fff';ctx.fillText(evFmt(e.mode,r.v),x+w-10,yy+7);});}
@@ -322,5 +322,5 @@ function trophyDialog(){const done=Object.keys(S.trophies).length;const list=TRO
 function _trophyWallRemoved(){const names=Object.keys(S.trophies).slice(-5);names.forEach((n,i)=>{const t=TROPHIES.find(x=>x[1]===n);if(t)drawIcon(troIcon(t),640+i*48,120,44);});}
 
 /* ---------- เซฟเก่า ---------- */
-function migrate(){if(S.frames===undefined)S._newFrames=1;const f=fresh(S.code);Object.keys(f).forEach(k=>{if(S[k]===undefined)S[k]=f[k];});S.stats=Object.assign(f.stats,S.stats);S.ev=Object.assign(f.ev,S.ev);S.ledger=Object.assign(blankLedger(),S.ledger);if(S.stats.total===0&&S.earned)S.stats.total=S.earned;if(S._newFrames){delete S._newFrames;Object.keys(FRAME_CATS).forEach(k=>{if(frameUnlocked(k))S.frames[k]=(S.frames[k]||0)+(k==='basic'?0:6);});}
+function migrate(){S.layout={};if(S.frames===undefined)S._newFrames=1;const f=fresh(S.code);Object.keys(f).forEach(k=>{if(S[k]===undefined)S[k]=f[k];});S.stats=Object.assign(f.stats,S.stats);S.ev=Object.assign(f.ev,S.ev);S.ledger=Object.assign(blankLedger(),S.ledger);if(S.stats.total===0&&S.earned)S.stats.total=S.earned;if(S._newFrames){delete S._newFrames;Object.keys(FRAME_CATS).forEach(k=>{if(frameUnlocked(k))S.frames[k]=(S.frames[k]||0)+(k==='basic'?0:6);});}
  /* โทรฟี่ City Dominator ที่ได้จากเงื่อนไขเดิมซึ่งง่ายเกินไป */ if(S.trophies['City Dominator']&&!RIVALS.every(r=>S.ev.beat[r.id]))delete S.trophies['City Dominator'];}

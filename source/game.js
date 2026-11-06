@@ -1,7 +1,7 @@
 'use strict';
 /* ===== Social Eyewear Game — ร้านแว่นตาจำลอง ===== */
-const GAME_VERSION='1.6';
-const W=900,H=680,SCALE=2;
+const GAME_VERSION='1.7';
+const W=1200,H=907,SCALE=1.5,MW=900,MH=680;
 const $=s=>document.querySelector(s);
 const fmt=n=>'฿'+Math.round(n).toLocaleString('en-US');
 const rnd=(a,b)=>a+Math.random()*(b-a);
@@ -43,7 +43,7 @@ const SHOP=[
  {id:'slit',cat:'exam',name:'Slit Lamp',spr:'slit',price:62000,fx:'ค่าบริการ +฿350 · ผู้สูงอายุเริ่มมา',fee:350,lv:3},
  {id:'fundus',cat:'exam',name:'กล้องถ่ายจอตา',spr:'fundus',price:110000,fx:'ตรวจจอตาได้ ค่าบริการ +฿600',fee:600,lv:4},
  {id:'oct',cat:'exam',name:'เครื่อง OCT',spr:'oct',price:190000,fx:'ตรวจเชิงลึก ค่าบริการ +฿1,000',fee:1000,lv:5},
- {id:'chair2',cat:'exam',name:'ห้องตรวจห้องที่ 2',spr:'chair',price:32000,fx:'วัดพร้อมกันได้ 2 คน'},
+ {id:'chair2',cat:'exam',name:'ห้องตรวจห้องที่ 2',spr:'chair',price:32000,fx:'เปิดห้องตรวจ 2 วัดพร้อมกันได้ 2 คน'},
  {id:'edger',cat:'lab',name:'เครื่องฝนเลนส์อัตโนมัติ',spr:'edger',price:16000,fx:'ประกอบแว่นเร็วขึ้น 30%'},
  {id:'lmeter',cat:'lab',name:'Lens Meter',spr:'lmeter',price:14000,fx:'ความแม่นยำสูง ทิปเพิ่ม 5%'},
  {id:'ultra',cat:'lab',name:'เครื่องล้างอัลตราโซนิก',spr:'ultra',price:9000,fx:'ส่งมอบแว่นใสกิ๊ง ทิปเพิ่ม 5%'},
@@ -53,7 +53,7 @@ const SHOP=[
  {id:'spin',cat:'frame',name:'ชั้นหมุนแว่นกันแดด',spr:'spin',price:20000,fx:'ปลดล็อกแว่นกันแดด ฿2,800 · สายแฟชั่นเริ่มมา'},
  {id:'glass',cat:'frame',name:'ตู้กระจกไทเทเนียม',spr:'glass',price:34000,fx:'ปลดล็อกกรอบโลหะ ฿3,400'},
  {id:'disp4',cat:'frame',name:'ตู้ดีไซเนอร์',spr:'disp4',price:75000,fx:'ปลดล็อกดีไซเนอร์ ฿5,200'},
- {id:'seat1',cat:'shop',name:'โซฟาแถวที่สอง',spr:'sofa',price:8000,fx:'ที่นั่งรอจาก 3 เป็น 6'},
+ {id:'seat1',cat:'shop',name:'โซฟาแถวที่สอง',spr:'sofa',price:8000,fx:'ที่นั่งรอจาก 3 เป็น 6 · นั่งโซฟาหลอดลดช้าลง 30%'},
  {id:'seat2',cat:'shop',name:'เก้าอี้เสริม',spr:'arm',price:11000,fx:'ที่นั่งรอเพิ่มเป็น 8'},
  {id:'water',cat:'shop',name:'มุมน้ำดื่ม',spr:'water',price:3500,fx:'ลูกค้ารอได้นานขึ้น 10%'},
  {id:'plant',cat:'shop',name:'ต้นไม้ในร้าน',spr:'plant',price:2500,fx:'ลูกค้ารอได้นานขึ้น 5%'},
@@ -62,6 +62,12 @@ const SHOP=[
  {id:'shoe2',cat:'shop',name:'รองเท้าวิ่งรุ่น 2',spr:'ic_star',price:15000,fx:'คุณเดินเร็วขึ้นอีก 25%',req:'shoe1'},
  {id:'cnt2',cat:'shop',name:'เคาน์เตอร์หินอ่อน',spr:'cnt2',price:26000,fx:'คิดเงินเร็วขึ้น 40%'},
  {id:'cnt3',cat:'shop',name:'เคาน์เตอร์ไม้พรีเมียม',spr:'cnt3',price:60000,fx:'คิดเงินเร็วขึ้น 70% · ทิปเพิ่ม 5%',req:'cnt2'},
+ {id:'ctcorner',cat:'contact',name:'มุมคอนแทคเลนส์',spr:'ct_kiosk',price:18000,fx:'เปิดขายคอนแทค แถมตู้ ACUVUE และสินค้าเริ่มต้น'},
+ {id:'ct_bl',cat:'contact',name:'ตู้ Bausch + Lomb',spr:'ct_bl',price:10000,fx:'ขายคอนแทครายเดือน',req:'ctcorner'},
+ {id:'ct_alcon',cat:'contact',name:'ตู้ Alcon',spr:'ct_alcon',price:10000,fx:'ขายคอนแทคราย 2 สัปดาห์',req:'ctcorner'},
+ {id:'ct_menicon',cat:'contact',name:'ตู้ Menicon',spr:'ct_menicon',price:13000,fx:'ขายคอนแทครายเดือนราคาสูงขึ้น',req:'ctcorner'},
+ {id:'ct_seed',cat:'contact',name:'ตู้ SEED',spr:'ct_seed',price:12000,fx:'ขายคอนแทคสีแฟชั่น',req:'ctcorner'},
+ {id:'ct_cooper',cat:'contact',name:'ตู้ CooperVision',spr:'ct_cooper',price:16000,fx:'ขายคอนแทคสำหรับสายตาเอียง',req:'ctcorner'},
  {id:'van',cat:'shop',name:'สัญญาจัดส่งด่วน Hoya',spr:'ic_gift',price:12000,fx:'เลนส์ส่งถึงร้านเร็วขึ้นครึ่งหนึ่ง'}
 ];
 const SHOPBY=Object.fromEntries(SHOP.map(s=>[s.id,s]));
@@ -90,17 +96,22 @@ const CUST=[
  {k:'c8',name:'สายแฟชั่น',lens:['sensity','nulux'],fr:['sun','fun','round'],req:{own:'spin'}},
  {k:'c10',name:'พ่อพาลูกมา',lens:['myo'],fr:['color','basic'],req:{own:'phoro'}},
  {k:'c5',name:'คุณลุง',lens:['prog','nulux'],fr:['metal','basic'],req:{own:'slit'}},
- {k:'c6',name:'คุณป้า',lens:['prog','long'],fr:['round','metal'],req:{own:'slit'}}
+ {k:'c6',name:'คุณป้า',lens:['prog','long'],fr:['round','metal'],req:{own:'slit'}},
+ {k:'c11',name:'ลูกค้าใจร้อน',type:'impatient',lens:['hilux','blue'],fr:['basic','metal'],req:{day:2},steps:['lens','frame','pay']},
+ {k:'c12',name:'ลูกค้าช่างเลือก',type:'picky',lens:['blue','nulux'],fr:['color','round','basic'],req:{day:3},steps:['frame','pay']},
+ {k:'c13',name:'ลูกค้า VIP',type:'vip',lens:['sensity','nulux','long'],fr:['metal','round','basic'],req:{level:5},steps:['exam','lens','frame','lab','pay']},
+ {k:'c14',name:'ลูกค้าต่อราคา',type:'bargain',lens:['hilux','nulux'],fr:['basic','color'],req:{day:2},steps:['lens','frame','lab','pay']},
+ {k:'c15',name:'ลูกค้าขาประจำ',type:'regular',lens:['blue','hilux'],fr:['basic','color','round'],req:{served:10}},
+ {k:'c16',name:'ลูกค้าคนดัง',type:'celeb',lens:['sensity','blue'],fr:['sun','fun','color'],req:{level:8,rep:3.5,rare:.2},steps:['lens','frame','pay']}
 ];
 const DAY_LEN=150;
 
 /* ---------- world layout (900x680) ---------- */
-const SPOT={door:{x:450,y:330},frames:{x:180,y:372},lab:{x:730,y:372},home:{x:450,y:395},
- cash:{x:745,y:432},counter:{x:745,y:610}};
-const CHAIRS=[{x:92,y:500,sx:165,sy:510},{x:92,y:640,sx:165,sy:650}];
-const QUEUE=[{x:745,y:610},{x:650,y:630},{x:590,y:662}];
-const SEATS=[{x:375,y:480},{x:450,y:480},{x:525,y:480},{x:375,y:610},{x:450,y:610},{x:525,y:610},{x:300,y:540},{x:600,y:540}];
-const ZONE={exam:{x:20,y:400,w:240,h:280},counter:{x:600,y:430,w:300,h:250},lab:{x:590,y:170,w:290,h:220},frames:{x:30,y:170,w:290,h:220}};
+const SPOT={door:{x:600,y:345},frames:{x:250,y:442},lab:{x:985,y:415},home:{x:600,y:440},contact:{x:925,y:652},cash:{x:985,y:722},counter:{x:985,y:825}};
+const CHAIRS=[{x:95,y:610,sx:170,sy:640},{x:95,y:805,sx:170,sy:835}];
+const QUEUE=[{x:985,y:825},{x:880,y:835},{x:790,y:845}];
+const SEATS=[{x:540,y:600},{x:610,y:600},{x:680,y:600},{x:540,y:755},{x:610,y:755},{x:680,y:755},{x:475,y:680},{x:745,y:680}];
+const ZONE={exam:{x:0,y:465,w:428,h:442},counter:{x:800,y:692,w:400,h:215},lab:{x:800,y:300,w:400,h:180},frames:{x:20,y:300,w:470,h:160}};
 
 /* ---------- state ---------- */
 let S=null;              // saved state
@@ -114,7 +125,7 @@ let dragging=null;
 let screen='title';
 let hover=null;
 
-function fresh(code){return{v:5,layout:{},frames:{basic:12},rel:{},quests:{},lastRandom:0,minigame:true,kit:{},hosp:{done:{},last:{},best:{},called:{},reports:[],sched:null},rev:0,xp:0,level:1,ledger:blankLedger(),history:[],daily:[],accComm:0,dayStart:0,dayHits:0,staffData:{},areas:1,branches:[],trophies:{},ev:{beat:{},last:{},wins:0,bronze:0,silver:0,gold:0},stats:{exams:0,veryHappy:0,total:0,sales:0,lensSold:0,frameSold:0,premium:0,blue:0,kinds:{},fashion:0,sun:0,sport:0,computer:0,kids:0,seniors:0,families:0,vip:0,topItem:0,satSum:0,satN:0,dayMax:0,targetHit:0,streak:0,bestStreak:0,profitKing:0,events:0},code,money:15000,rep:3,day:1,dayT:0,owned:{},lens:{hilux:{listed:true,stock:8}},staff:[],floor:0,floors:{0:true},served:0,earned:0,sound:true};}
+function fresh(code){return{v:6,ct:{},penalty:0,layout:{},frames:{basic:12},rel:{},quests:{},lastRandom:0,minigame:true,kit:{},hosp:{done:{},last:{},best:{},called:{},reports:[],sched:null},rev:0,xp:0,level:1,ledger:blankLedger(),history:[],daily:[],accComm:0,dayStart:0,dayHits:0,staffData:{},areas:1,branches:[],trophies:{},ev:{beat:{},last:{},wins:0,bronze:0,silver:0,gold:0},stats:{exams:0,veryHappy:0,total:0,sales:0,lensSold:0,frameSold:0,premium:0,blue:0,kinds:{},fashion:0,sun:0,sport:0,computer:0,kids:0,seniors:0,families:0,vip:0,topItem:0,satSum:0,satN:0,dayMax:0,targetHit:0,streak:0,bestStreak:0,profitKing:0,events:0},code,money:15000,rep:3,day:1,dayT:0,owned:{},lens:{hilux:{listed:true,stock:8}},staff:[],floor:0,floors:{0:true},served:0,earned:0,sound:true};}
 function newLive(){return{cust:[],jobs:[],player:{key:'od1',x:SPOT.home.x,y:SPOT.home.y,dir:'f',flip:false,tasks:[],task:null,prog:0,t:0},workers:[],deliveries:[],fx:[],spawn:3,seq:0,event:null,chairs:[null,null],queue:[],today:blankDay(),closing:false,summary:false,feed:[],seen:{},saveT:0};}
 function blankDay(){return{rev:0,lens:0,frame:0,exam:0,tip:0,cost:0,served:0,left:0,buy:0};}
 function own(id){return !!(S&&S.owned[id]);}
@@ -126,7 +137,7 @@ function examTime(sp){let t=7*((G&&G.dayFx&&G.dayFx.exam)||1);if(own('auto'))t*=
 function labTime(sp){let t=8;if(own('edger'))t*=.7;if(own('uv'))t*=.75;return t/(sp||1);}
 function cashTime(sp){let t=1.6;if(own('cnt2'))t*=.6;if(own('cnt3'))t*=.5;return t/(sp||1);}
 function tipBonus(){return (own('lmeter')?.05:0)+(own('ultra')?.05:0)+(own('mirror')?.05:0)+(own('cnt3')?.05:0);}
-function repMul(){return .85+S.rep*.05;}
+function repMul(){return (.85+S.rep*.05)*(1-(S.penalty||0)/100);}
 function frameUnlocked(c){const f=FRAME_CATS[c];return f.free||own(f.shelf);}
 function lensState(id){return S.lens[id]||(S.lens[id]={listed:false,stock:0});}
 function lensAvailable(id){const l=LENSES[id];return (!l.need||own(l.need))&&(!l.course||courseDone(l.course));}
@@ -282,12 +293,12 @@ function welcome(){openModal(`<div class="sheethead"><h2>เปิดร้า�
  $('#modal [data-c]').onclick=closeModal;}
 
 /* ---------- customers ---------- */
-function eligibleCustomers(){return CUST.filter(c=>{const r=c.req;if(!r)return true;if(r.own&&!own(r.own))return false;if(r.day&&S.day<r.day)return false;return true;});}
+function eligibleCustomers(){return CUST.filter(c=>{const r=c.req;if(!r)return true;if(r.own&&!own(r.own))return false;if(r.day&&S.day<r.day)return false;if(r.level&&S.level<r.level)return false;if(r.served&&S.served<r.served)return false;if(r.rep&&S.rep<r.rep)return false;if(r.rare&&Math.random()>r.rare)return false;return true;});}
 function maxExamLv(){let n=0;SHOP.forEach(s=>{if(s.cat==='exam'&&s.lv&&own(s.id))n=Math.max(n,s.lv);});return n;}
 function spawnCustomer(){
  const free=[];for(let i=0;i<seatCount();i++)if(!G.cust.some(c=>c.seat===i))free.push(i);
  if(!free.length){G.today.left++;log('ที่นั่งเต็ม ลูกค้าเดินกลับไป','r');return;}
- const pool=eligibleCustomers();const t=pick(pool.flatMap(x=>Array(1+relLv(x.k)).fill(x)));
+ const pool=eligibleCustomers();const t=G.forceVip?CUST.find(x=>x.type==='vip'):pick(pool.flatMap(x=>Array(1+relLv(x.k)).fill(x)));const ty=t.type&&CTYPE[t.type];
  const lensId=pick(t.lens.filter(l=>lensAvailable(l)).concat(t.lens.includes('hilux')?['hilux']:[]))||'hilux';
  let frCats=t.fr.filter(frameUnlocked); if(!frCats.length)frCats=['basic'];
  const frCat=Math.random()<.92?pick(frCats):pick(t.fr);
@@ -298,10 +309,12 @@ function spawnCustomer(){
  else if(r<.86)steps=['exam','pay'];
  else if(r<.95)steps=['frame','pay'];
  else steps=['repair','lab','pay'];
+ if(t.steps)steps=[...t.steps];
+ let ctType=null,ctPow=null;if(!t.steps&&ctList().length&&Math.random()<.22){steps=Math.random()<.5?['exam','contact','pay']:['contact','pay'];ctType=CT[pick(ctList())].type;ctPow=pick(CTPOW);}
  const lv=Math.floor(rnd(0,maxExamLv()+1));
  const c={id:++G.seq,k:t.k,name:t.name,x:SPOT.door.x,y:SPOT.door.y,dir:'f',flip:false,steps,si:0,lens:lensId,frCat,examLv:lv,seat:free[0],pat:100,
-  rate:(100/(rnd(80,110)+Math.max(0,8-S.day)*3))/patMul()/((G.dayFx&&G.dayFx.pat)||1),vip:!!G.forceVip||(S.rep>=3.2&&Math.random()<.08+relLv(t.k)*.01),sold:[],comm:0,bill:[],sat:0,phase:'walk',tx:0,ty:0,fade:0,q:pick(LENS_Q[lensId]),owner:null,t:Math.random()*5};
- const seat=SEATS[c.seat];c.tx=seat.x;c.ty=seat.y;G.cust.push(c);G.forceVip=0;if(relLv(t.k)>0)G.fx.push({x:c.x,y:c.y-110,t:1.4,text:REL[relLv(t.k)][0],col:'#6a3fc4'});beep('door');
+  rate:(100/(rnd(80,110)+Math.max(0,8-S.day)*3))/patMul()/((G.dayFx&&G.dayFx.pat)||1)*(ty?ty.rate:1),type:t.type,ctType,ctPow,vip:t.type==='vip',sold:[],comm:0,bill:[],sat:0,phase:'walk',tx:0,ty:0,fade:0,q:pick(LENS_Q[lensId]),owner:null,t:Math.random()*5};
+ const seat=SEATS[c.seat];c.tx=seat.x;c.ty=seat.y;G.cust.push(c);G.forceVip=0;if(ty){toast(ty.say);G.fx.push({x:c.x,y:c.y-120,t:1.8,text:ty.tag,col:ty.col});}else if(relLv(t.k)>0)G.fx.push({x:c.x,y:c.y-110,t:1.4,text:REL[relLv(t.k)][0],col:'#6a3fc4'});beep('door');
 }
 function step(c){return c.steps[c.si];}
 function sendSeat(c){const s=SEATS[c.seat];c.tx=s.x;c.ty=s.y;c.phase='walk';}
@@ -309,7 +322,7 @@ function leave(c,happy){if(c.chair!=null){G.chairs[c.chair]=null;c.chair=null;}
  const qi=G.queue.indexOf(c);if(qi>=0){G.queue.splice(qi,1);reQueue();}
  G.jobs=G.jobs.filter(j=>j.c!==c);
  c.seat=-1;c.tx=SPOT.door.x;c.ty=SPOT.door.y-10;c.phase=happy?'leaving':'angry';c.owner=null;
- if(!happy){G.today.left++;S.rep=clamp(S.rep-.12,1,5);log(`${c.name} รอไม่ไหว เดินออกจากร้าน`,'r');beep('bad');G.fx.push({x:c.x,y:c.y-100,t:1.6,text:'ไม่รอแล้ว!',col:'#d8324a'});}}
+ if(!happy){G.today.left++;S.rep=clamp(S.rep-(c.type?CTYPE[c.type].rep:.12),1,5);log(`${c.name} รอไม่ไหว เดินออกจากร้าน`,'r');beep('bad');G.fx.push({x:c.x,y:c.y-100,t:1.6,text:'ไม่รอแล้ว!',col:'#d8324a'});}}
 function dropOwner(c,who){if(c.owner===who)c.owner=null;}
 
 /* --- actions --- */
@@ -337,25 +350,28 @@ function onCustomerClick(c){
  else if(st==='pay')toCounter(c);
  else if(st==='lens'){c.owner='player';pushTask({kind:'lens',c,x:c.x+50,y:c.y+6,dur:.2});}
  else if(st==='frame'){c.owner='player';pushTask({kind:'frame',c,x:SPOT.frames.x,y:SPOT.frames.y,dur:.3});}
+ else if(st==='contact'){c.owner='player';pushTask({kind:'contact',c,x:SPOT.contact.x,y:SPOT.contact.y,dur:.3});}
  else if(st==='repair'){c.owner='player';pushTask({kind:'repairTalk',c,x:c.x+50,y:c.y+6,dur:.3});}
 }
 function onLabClick(){const j=G.jobs.find(j=>!j.owner);if(!j){toast('ยังไม่มีงานที่โต๊ะช่าง');return;}j.owner='player';pushTask({kind:'lab',j,x:SPOT.lab.x,y:SPOT.lab.y});}
 
-function bill(c,kind,label,amount,stat){c.bill.push({label,amount,stat});G.today[stat]=(G.today[stat]||0)+amount;}
-function completeExam(c,who){S.stats.exams++;staffXp(who);const base=250;let fee=base;SHOP.forEach(s=>{if(s.cat==='exam'&&s.lv&&own(s.id)&&s.lv<=Math.max(1,c.examLv))fee+=s.fee;});
+function bill(c,kind,label,amount,stat){if(c.type)amount*=CTYPE[c.type].mul;c.bill.push({label,amount,stat});G.today[stat]=(G.today[stat]||0)+amount;}
+function completeExam(c,who){S.stats.exams++;staffXp(who);const base=250;let fee=base*(1-(S.penalty||0)/100);SHOP.forEach(s=>{if(s.cat==='exam'&&s.lv&&own(s.id)&&s.lv<=Math.max(1,c.examLv))fee+=s.fee;});
  bill(c,'exam','ค่าตรวจวัดสายตา',fee,'exam');if(who&&who.key)workerComm(c,who,fee*COMM.od);G.fx.push({x:c.x,y:c.y-100,t:1.2,text:'ค่าตรวจ '+fmt(fee),col:'#2f6fe0'});
  if(c.chair!=null){G.chairs[c.chair]=null;c.chair=null;}
  sendSeat(c);c.then='idle';c.si++;c.owner=null;c.pat=Math.min(100,c.pat+15);
  if(c.si>=c.steps.length)leave(c,true);beep('ok');}
 function workerComm(c,who,amount){if(who&&who.key)c.comm=(c.comm||0)+amount;}
 function chooseLens(c,id,who){const l=LENSES[id],ls=lensState(id);ls.stock--;const ok=lensKind(id)===c.lens;
- const price=lensPrice(id)*(c.vip?1.5:1);bill(c,'lens','เลนส์ '+l.name,price,'lens');c.sold.push({t:'lens',id});
+ const price=lensPrice(id);bill(c,'lens','เลนส์ '+l.name,price,'lens');c.sold.push({t:'lens',id});
  if(who&&who.role==='sales')workerComm(c,who,price*COMM.sales);
  c.sat+=(ok?1.2:-1)+satBonus()*.5+(ok&&l.premium?.3:0);c.chosenLens=id;
  G.fx.push({x:c.x,y:c.y-100,t:1.3,text:ok?'ตรงใจเลย!':'ไม่ค่อยตรงที่ต้องการ…',col:ok?'#2f9e3f':'#d8324a'});
- if(!ok){c.pat=Math.max(5,c.pat-20);S.rep=clamp(S.rep-.05,1,5);}
+ if(!ok){c.pat=Math.max(5,c.pat-20);S.rep=clamp(S.rep-.08,1,5);}
  c.si++;c.owner=null;c.phase='idle';beep(ok?'ok':'bad');}
-function chooseFrame(c,cat,who){const f=FRAME_CATS[cat];const ok=cat===c.frCat;const price=f.price*repMul()*(c.vip?1.5:1);
+function chooseFrame(c,cat,who){const f=FRAME_CATS[cat];const ok=cat===c.frCat;
+ if(c.type==='picky'&&(c.tried||0)<2){c.tried=(c.tried||0)+1;c.owner=null;c.phase='idle';c.pat=Math.min(100,c.pat+12);G.fx.push({x:c.x,y:c.y-100,t:1.4,text:`ลองแล้ว ${c.tried}/3 ขอดูอีกแบบ`,col:'#8a3fc4'});softPlay('pick');return;}
+ if(!ok)S.rep=clamp(S.rep-.04,1,5);const price=f.price*repMul();
  bill(c,'frame','กรอบ '+f.name,price,'frame');c.sold.push({t:'frame',cat});S.stats.frameSold++;S.frames[cat]=Math.max(0,frameStock(cat)-1);c.sat+=ok?1:-.6;
  if(who&&who.role==='sales')workerComm(c,who,price*COMM.sales);
  G.fx.push({x:SPOT.frames.x,y:SPOT.frames.y-90,t:1.2,text:ok?'ถูกใจกรอบนี้!':'ก็ใส่ได้นะ…',col:ok?'#2f9e3f':'#d8324a'});
@@ -365,7 +381,10 @@ function startRepair(c){bill(c,'frame','ค่าซ่อม/ดัดแว่
 function completeJob(j,who){G.jobs=G.jobs.filter(x=>x!==j);const c=j.c;if(!G.cust.includes(c))return;staffXp(who);if(who&&who.key)workerComm(c,who,COMM.tech);c.si++;c.phase='idle';c.pat=Math.min(100,c.pat+20);c.owner=null;
  G.fx.push({x:SPOT.lab.x,y:SPOT.lab.y-110,t:1.1,text:'แว่นเสร็จแล้ว',col:'#2f9e3f'});beep('ok');if(c.si>=c.steps.length)leave(c,true);}
 function staffXp(who){addStaffXp(who&&who.key?who.key:'owner',10);}
-function completeCash(c,who){staffXp(who);const total=c.bill.reduce((a,b)=>a+b.amount,0);
+function completeCash(c,who){staffXp(who);if(c.type==='bargain'&&c.deal==null)c.deal=.15;const dealMul=1-(c.deal||0);c.bill.forEach(b=>b.amount*=dealMul);let total=c.bill.reduce((a,b)=>a+b.amount,0);
+ if(c.type==='celeb'){if(c.sat>=1){const extra=total*2;c.bill.push({label:'ค่าตอบแทนจากลูกค้าคนดัง',amount:extra,stat:'tip'});total+=extra;S.rep=clamp(S.rep+.5,1,5);log('ลูกค้าคนดังถูกใจ โพสต์ชมร้าน ชื่อเสียงเพิ่ม','g');}else{S.rep=clamp(S.rep-.3,1,5);log('ลูกค้าคนดังไม่ถูกใจ ชื่อเสียงลดลง','r');}}
+ if(c.type==='vip'&&c.sat<1)S.rep=clamp(S.rep-.15,1,5);
+ if(c.type==='regular'){const extra=total*(.1+relLv(c.k)*.03);c.bill.push({label:'โบนัสความสัมพันธ์',amount:extra,stat:'tip'});total+=extra;S.rel[c.k]=(S.rel[c.k]||0)+1;}
  const rate=clamp(.02+c.pat/100*.1+c.sat*.04+tipBonus()+(c.vip?.1:0)+relLv(c.k)*.015,0,.45);const tip=total*rate;
  c.bill.forEach(b=>earn(b.stat,b.amount));earn('tip',tip);S.accComm+=c.comm||0;
  S.earned+=total+tip;S.served++;S.stats.total+=total;G.today.rev+=total;G.today.tip+=tip;G.today.served++;
@@ -384,7 +403,7 @@ function walkEntity(e,tx,ty,speed,dt){const dx=tx-e.x,dy=ty-e.y,d=Math.hypot(dx,
 function runPlayerTask(dt){const p=G.player;if(keyMove(dt))return;
  if(!p.task&&p.tasks.length){p.task=p.tasks.shift();p.prog=0;}
  const t=p.task;if(!t){if(!p.stay)navWalk(p,SPOT.home.x,SPOT.home.y,moveSpeed()*.7,dt);else p.moving=false;return;}
- if(t.c&&!G.cust.includes(t.c)){if(t.kind==='deliver')p.carry=null;p.task=null;return;}
+ if(t.c&&!G.cust.includes(t.c)){if(t.kind==='deliver'||t.kind==='deliverCt')p.carry=null;p.task=null;return;}
  if(t.c&&t.kind==='lens'){t.x=t.c.x+50;t.y=t.c.y+6;}
  p.stay=false;if(!navWalk(p,t.x,t.y,moveSpeed()*(KEYS.shift?1.5:1),dt))return;
  p.dir=t.kind==='cash'?'f':p.dir;
@@ -398,7 +417,9 @@ function finishTask(t){const c=t.c;
  switch(t.kind){
   case 'exam':examMinigame(c,()=>{if(G.cust.includes(c))completeExam(c);});break;
   case 'deliver':G.player.carry=null;chooseFrame(c,t.cat);renderRail();break;
-  case 'cash':completeCash(c);break;
+  case 'cash':if(c.type==='bargain'&&c.deal==null)bargainDialog(c);else completeCash(c);break;
+  case 'contact':contactDialog(c);break;
+  case 'deliverCt':G.player.carry=null;chooseContact(c,t.pid,t.pow);renderRail();break;
   case 'lens':lensDialog(c);break;
   case 'frame':frameDialog(c);break;
   case 'repairTalk':startRepair(c);break;
@@ -415,7 +436,8 @@ function workerTick(w,dt){
   if(t.kind==='lab'){t.j.t+=dt*w.speed;if(t.j.t>=t.j.dur){completeJob(t.j,w);w.task=null;}return;}
   if(t.kind==='exam'&&t.c.phase!=='atChair')return;
   w.prog+=dt;if(w.prog<t.dur)return;w.prog=0;w.task=null;const c=t.c;
-  if(t.kind==='exam')completeExam(c,w);
+  if(t.kind==='contact'){const pk=ctWorkerPick(c,Math.min(1,w.acc+sdOf(w.key).courses.length*.03));if(pk)chooseContact(c,pk[0],pk[1],w);else c.owner=null;}
+  else if(t.kind==='exam')completeExam(c,w);
   else if(t.kind==='cash')completeCash(c,w);
   else if(t.kind==='lens'){const others=Object.keys(S.lens).filter(k=>lensKind(k)!==c.lens&&S.lens[k].listed&&S.lens[k].stock>0&&lensAvailable(k));let id=bestLensFor(c.lens);const acc=Math.min(1,w.acc+sdOf(w.key).courses.length*.03);if(others.length&&(!id||Math.random()>acc))id=pick(others);if(id)chooseLens(c,id,w);else c.owner=null;}
   else if(t.kind==='frame'){let cat=c.frCat;if(!frameUnlocked(cat)||Math.random()>w.acc)cat=frameUnlocked(c.frCat)&&Math.random()<.5?c.frCat:'basic';if(frameStock(cat)<1)cat=Object.keys(FRAME_CATS).find(k=>frameUnlocked(k)&&frameStock(k)>0);if(cat)chooseFrame(c,cat,w);else c.owner=null;}
@@ -435,6 +457,7 @@ function workerTick(w,dt){
   const payer=G.cust.find(c=>c.phase==='idle'&&step(c)==='pay'&&!c.owner);if(payer&&G.queue.length<QUEUE.length){toCounter(payer);return;}
   const ask=G.cust.find(c=>c.phase==='idle'&&!c.owner&&step(c)==='lens'&&bestLensFor(c.lens));
   if(ask){ask.owner=w;w.task={kind:'lens',c:ask,x:ask.x-50,y:ask.y+6,dur:1.6/w.speed};return;}
+  const ctc=G.cust.find(c=>c.phase==='idle'&&!c.owner&&step(c)==='contact'&&ctWorkerPick(c,1));if(ctc){ctc.owner=w;w.task={kind:'contact',c:ctc,x:SPOT.contact.x,y:SPOT.contact.y,dur:1.8/w.speed};return;}
   const fr=Object.keys(FRAME_CATS).some(k=>frameUnlocked(k)&&frameStock(k)>0)&&G.cust.find(c=>c.phase==='idle'&&!c.owner&&step(c)==='frame');
   if(fr){fr.owner=w;w.task={kind:'frame',c:fr,x:SPOT.frames.x+50,y:SPOT.frames.y,dur:2/w.speed};return;}
   const rp=G.cust.find(c=>c.phase==='idle'&&!c.owner&&step(c)==='repair');
@@ -445,7 +468,7 @@ function workerTick(w,dt){
 
 /* ---------- main update ---------- */
 function update(dt){
- tickRandom();
+ tickRandom();updatePenalty();
  G.saveT+=dt;if(G.saveT>30){G.saveT=0;saveGame(true);}
  if(G.event)tickEvent(dt);
  if(!G.closing||G.event){if(!G.event)S.dayT+=dt;
@@ -461,7 +484,8 @@ function update(dt){
    else{c.phase=step(c)==='lab'?'busy':'idle';c.dir='f';c.flip=false;}
   }
   if(c.phase==='leaving'||c.phase==='angry'){if(arrive)c.gone=true;return;}
-  const mult=c.phase==='busy'?.4:c.owner?.5:c.phase==='counter'?.7:1;
+  const onSofa=c.phase==='idle'&&c.seat>=0&&Math.hypot(c.x-SEATS[c.seat].x,c.y-SEATS[c.seat].y)<10;
+  const mult=c.phase==='busy'?.4:c.owner?.5:c.phase==='counter'?.7:onSofa?.7:1;
   c.pat-=c.rate*mult*dt;
   if(c.pat<=0&&c.phase!=='walk')leave(c,false);
  });
@@ -476,46 +500,33 @@ function update(dt){
 }
 
 /* ---------- draw ---------- */
-function floorDraw(){const i=S.floor,fw=ATLAS.FW,fh=ATLAS.FH,c=i%4,r=Math.floor(i/4);
- ctx.imageSmoothingEnabled=false;ctx.drawImage(IMG.floors,c*fw,r*fh,fw,fh,0,0,W,H);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';}
+function floorDraw(){const i=S.floor,fw=ATLAS.FW,fh=ATLAS.FH,c=i%4,r=Math.floor(i/4),k=W/fw,top=40;
+ ctx.imageSmoothingEnabled=false;ctx.drawImage(IMG.floors,c*fw,r*fh+top,fw,fh-top,0,0,W,(fh-top)*k);const yy=(fh-top)*k;ctx.drawImage(IMG.floors,c*fw,r*fh+fh-50,fw,50,0,yy,W,H-yy+2);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';}
 function draw(){
  ctx.setTransform(SCALE,0,0,SCALE,0,0);
  floorDraw();
  const list=[];
- let ox=0,oy=0;const setG=g=>{[ox,oy]=gOff(g);};const add=(k,x,y,h)=>{const X=x+ox,Y=y+oy;list.push({y:Y,fn:()=>sprFeet(k,X,Y,h)});};
- // door — floor 0 already has its own
- if(S.floor!==0)add('door',450,322,170);
- add('mat',450,370,38);
- setG('frames');
- add('disp2',95,332,112);
- if(own('disp1'))add('disp1',212,332,112);
- if(own('cab'))add('cab',322,334,108);
- if(own('spin'))add('spin',26,345,112);
- if(own('glass'))add('glass',603,340,112);
- if(own('disp4'))add('disp4',300,405,84);
- setG('exam');
- add('chart',36,470,120);
- add('chair',92,516,104);
- if(own('chair2')){add('chart',36,610,120);add('chair',92,656,104);}
- const EQ=[['auto',230,470],['phoro',255,590],['slit',215,665],['fundus',322,480],['oct',310,662]];
- EQ.forEach(([k,x,y])=>{if(own(k))add(k,x,y,k==='phoro'?110:88);});
- setG('lab');
- add('desk2',730,332,120);
- add(own('edger')?'edger':'bench',615,350,own('edger')?76:64);
- if(own('lmeter'))add('lmeter',858,350,76);
- if(own('ultra'))add('ultra',808,362,50);
- if(own('uv'))add('uv',640,405,50);
- setG('wait');
- add('sofa',450,445,76);
- if(own('seat1'))add('sofa',450,575,76);
- if(own('seat2')){add('arm',300,505,66);add('arm',600,505,66);}
- ox=oy=0;if(own('water'))add('water',875,470,80);
- if(own('plant'))add('plant',880,640,70);
- if(own('mirror'))add('mirror',590,440,84);
- setG('counter');
- const cnt=own('cnt3')?'cnt3':own('cnt2')?'cnt2':'cnt1';
- add(cnt,745,540,106);
- ox=oy=0;
+ const add=(k,x,y,h)=>list.push({y,fn:()=>sprFeet(k,x,y,h)});
+ if(!own('chair2')){ctx.fillStyle='rgba(22,32,74,.22)';ctx.fillRect(0,695,410,212);}
+ if(S.floor!==0)add('door',600,296,226);
+ add('mat',600,356,44);
+ drawWalls(list);
+ /* ชั้นวางกรอบเรียงตามผนังซ้าย */
+ add('disp2',85,395,92);if(own('disp1'))add('disp1',205,395,92);if(own('cab'))add('cab',320,395,92);if(own('glass'))add('glass',405,395,92);if(own('spin'))add('spin',455,398,92);if(own('disp4'))add('disp4',490,500,76);
+ /* ห้องตรวจ 1 */
+ add('chart',38,590,86);add('chair',95,628,80);
+ [['auto',195,590],['phoro',245,590],['slit',295,590],['fundus',345,590],['oct',390,590]].forEach(([k,x,y])=>{if(own(k))add(k,x,y,58);});
+ /* ห้องตรวจ 2 */
+ if(own('chair2')){add('chart',38,785,86);add('chair',95,823,80);}
+ /* ห้องช่าง */
+ add('desk2',985,385,88);add(own('edger')?'edger':'bench',860,385,own('edger')?62:52);if(own('lmeter'))add('lmeter',1095,385,62);if(own('ultra'))add('ultra',1160,385,42);if(own('uv'))add('uv',1155,425,42);
+ /* มุมคอนแทค */
+ if(own('ctcorner')){add('ct_kiosk',925,632,120);const cs=ctList();const sl=[[1050,575],[1100,575],[1150,575],[1050,655],[1100,655],[1150,655]];cs.forEach((k,i)=>add(CT[k].spr,sl[i][0],sl[i][1],80));}else add('ct_stand',985,620,90);
+ /* เลานจ์นั่งรอ */
+ add('sofa',610,592,66);if(own('seat1'))add('sofa',610,747,66);if(own('seat2')){add('arm',475,672,56);add('arm',745,672,56);}
+ if(own('water'))add('water',455,850,70);if(own('plant'))add('plant',770,880,60);if(own('mirror'))add('mirror',745,500,70);
+ /* เคาน์เตอร์ */
+ add(own('cnt3')?'cnt3':own('cnt2')?'cnt2':'cnt1',985,785,90);
  G.cust.forEach(c=>list.push({y:c.y,fn:()=>drawActor(c,c.k,c.fade)}));
  const p=G.player;list.push({y:p.y,fn:()=>drawActor(p,'od1',1,true)});
  G.workers.filter(w=>!isTraining(w.key)).forEach(w=>list.push({y:w.y,fn:()=>drawActor(w,w.key,1)}));
@@ -526,14 +537,12 @@ function draw(){
    label(z.x+z.w/2,z.y+22,st==='exam'?'วางที่นี่เพื่อวัดตา':'วางที่นี่เพื่อคิดเงิน','#16204a','#fff');}
   const c=dragging.c;ctx.globalAlpha=.8;sprFeet(c.k+'f',dragging.x,dragging.y+40,94);ctx.globalAlpha=1;}
  // lab job badges
- if(G.jobs.length){const j=G.jobs.filter(j=>!j.owner).length;drawIcon('ic_tool',SPOT.lab.x,SPOT.lab.y-172,36);if(j)label(SPOT.lab.x+36,SPOT.lab.y-172,String(G.jobs.length),'#f08a12','#fff');
-  const active=G.jobs.find(j=>j.owner);if(active)bar(SPOT.lab.x-40,SPOT.lab.y-146,80,8,active.t/active.dur,'#2f9e3f');}
+ if(G.jobs.length){const j=G.jobs.filter(j=>!j.owner).length;drawIcon('ic_tool',SPOT.lab.x,SPOT.lab.y-140,36);if(j)label(SPOT.lab.x+36,SPOT.lab.y-140,String(G.jobs.length),'#f08a12','#fff');
+  const active=G.jobs.find(j=>j.owner);if(active)bar(SPOT.lab.x-40,SPOT.lab.y-115,80,8,active.t/active.dur,'#2f9e3f');}
  // HUD labels of stations
- if(!editLayout)label(ZONE.frames.x+115,ZONE.frames.y-10,'ชั้นวางกรอบ','#16204a','#fff');
- if(!editLayout)label(ZONE.lab.x+145,ZONE.lab.y-10,'โต๊ะช่าง','#16204a','#fff');
- if(!editLayout)label(ZONE.exam.x+145,ZONE.exam.y-8,'ห้องตรวจ','#16204a','#fff');
- drawEventHud();if(editLayout)drawLayoutEdit();
- G.fx.forEach(f=>{ctx.globalAlpha=clamp(f.t,0,1);label(f.x,f.y-(1.5-f.t)*22,f.text,f.col,'#fff',f.big?19:15);ctx.globalAlpha=1;});
+ [[250,300,'ชั้นวางกรอบ'],[985,300,'ห้องช่าง'],[210,478,'ห้องตรวจ 1'],[610,465,'ที่นั่งรอ'],[925,495,'มุมคอนแทคเลนส์'],[985,678,'เคาน์เตอร์'],[210,668,own('chair2')?'ห้องตรวจ 2':'ห้องตรวจ 2 · ว่าง ซื้อได้ที่ร้านค้า']].forEach(([x,y,t])=>label(x,y,t,'#16204a','#fff'));
+ drawEventHud();
+ G.fx.forEach(f=>{ctx.globalAlpha=clamp(f.t,0,1);label(f.x,f.y-(1.5-f.t)*22,f.text,f.col,'#fff',f.big?23:18);ctx.globalAlpha=1;});
 }
 function drawActor(a,key,alpha,isPlayer){const moving=a.moving;
  const bob=moving?Math.abs(Math.sin(a.t*11))*5:0;const lean=moving?Math.sin(a.t*11)*.05:0;
@@ -557,32 +566,32 @@ function drawCustHud(c){if(c.phase==='leaving')return;if(c.phase==='angry'){draw
  if(c.phase==='counter')k=G.queue[0]===c?'ic_coin':'ic_dots';
  else if(c.phase==='atChair')k='ic_clip';
  else if(c.phase==='busy')k='ic_tool';
- else if(c.phase==='idle')k=st==='exam'?'ic_clip':st==='lens'?'ic_q':st==='frame'?'b_black':st==='pay'?'ic_coin':st==='repair'?'ic_tool':null;
+ else if(c.phase==='idle')k=st==='exam'?'ic_clip':st==='lens'?'ic_q':st==='frame'?'b_black':st==='pay'?'ic_coin':st==='repair'?'ic_tool':st==='contact'?'ct_case':null;
  const pulse=(c.phase==='idle'||(c.phase==='counter'&&G.queue[0]===c))&&!c.owner?1+Math.sin(c.t*5)*.06:1;
  if(k)drawIcon(k,c.x,y-14,36*pulse);
- if(c.vip)label(c.x+32,y+9,'VIP','#f08a12','#fff',11);
+ if(c.type)label(c.x,y+22,CTYPE[c.type].tag,CTYPE[c.type].col,'#fff',12);
  const col=c.pat>55?'#2f9e3f':c.pat>25?'#f08a12':'#d8324a';bar(c.x-26,y+6,52,7,c.pat/100,col);
  if(hover===c){ctx.strokeStyle='#f6b21b';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(c.x,c.y-1,30,10,0,0,Math.PI*2);ctx.stroke();}
 }
 function drawIcon(k,x,y,s){const a=ATLAS.pos[k];if(!a)return;const r=s/Math.max(a[2],a[3]);spr(k,x-a[2]*r/2,y-a[3]*r/2,a[2]*r,a[3]*r);}
 function bar(x,y,w,h,v,col){ctx.fillStyle='#16204a';ctx.fillRect(x-2,y-2,w+4,h+4);ctx.fillStyle='#fff7e6';ctx.fillRect(x,y,w,h);ctx.fillStyle=col;ctx.fillRect(x,y,w*clamp(v,0,1),h);}
-function label(x,y,t,bg,fg,size){const s=size||13;ctx.font=`500 ${s}px Mitr,"Noto Sans Thai",Tahoma,sans-serif`;const w=ctx.measureText(t).width+12;ctx.fillStyle=bg;ctx.beginPath();const h=s+9;ctx.roundRect?ctx.roundRect(x-w/2,y-h/2,w,h,5):ctx.rect(x-w/2,y-h/2,w,h);ctx.fill();ctx.fillStyle=fg;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,x,y+.5);}
+function label(x,y,t,bg,fg,size){const s=size||16;ctx.font=`500 ${s}px Mitr,"Noto Sans Thai",Tahoma,sans-serif`;const w=ctx.measureText(t).width+12;ctx.fillStyle=bg;ctx.beginPath();const h=s+9;ctx.roundRect?ctx.roundRect(x-w/2,y-h/2,w,h,5):ctx.rect(x-w/2,y-h/2,w,h);ctx.fill();ctx.fillStyle=fg;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,x,y+.5);}
 
 /* ---------- input ---------- */
 function evPos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left-cv.clientLeft)/(r.width-2*cv.clientLeft)*W,y:(e.clientY-r.top-cv.clientTop)/(r.height-2*cv.clientTop)*H};}
 function hitCust(p){const a=[...G.cust].sort((x,y)=>y.y-x.y);return a.find(c=>c.phase!=='leaving'&&c.phase!=='angry'&&Math.abs(p.x-c.x)<34&&p.y<c.y+6&&p.y>c.y-128);}
 function inZone(p,z){return p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h;}
 function initInput(){
- cv.addEventListener('pointerdown',e=>{if(editLayout){layoutDown(evPos(e));cv.setPointerCapture(e.pointerId);return;}if(paused||!G)return;const p=evPos(e);if(G.mobile){mobileClick(p);return;}const c=hitCust(p);
+ cv.addEventListener('pointerdown',e=>{if(paused||!G)return;const p=evPos(e);if(G.mobile){mobileClick(p);return;}const c=hitCust(p);
   if(c&&c.phase==='idle'&&!c.owner&&(step(c)==='exam'||step(c)==='pay')){dragging={c,x:p.x,y:p.y,sx:p.x,sy:p.y,moved:false};cv.setPointerCapture(e.pointerId);return;}
   if(c){onCustomerClick(c);return;}
   if(inZone(p,ZONE.lab)){onLabClick();return;}
   if(inZone(p,ZONE.counter)&&G.queue[0]){onCustomerClick(G.queue[0]);return;}
  });
- cv.addEventListener('pointermove',e=>{if(editLayout){layoutMove(evPos(e));return;}if(!G||G.mobile)return;const p=evPos(e);
+ cv.addEventListener('pointermove',e=>{if(!G||G.mobile)return;const p=evPos(e);
   if(dragging){dragging.x=p.x;dragging.y=p.y;if(Math.hypot(p.x-dragging.sx,p.y-dragging.sy)>10)dragging.moved=true;return;}
   hover=hitCust(p)||null;cv.style.cursor=hover?(hover.phase==='idle'&&['exam','pay'].includes(step(hover))?'grab':'pointer'):(inZone(p,ZONE.lab)&&G.jobs.length?'pointer':'default');});
- const end=e=>{if(editLayout){editLayout.drag=null;return;}if(!dragging)return;const d=dragging;dragging=null;const c=d.c;if(!G.cust.includes(c)||c.phase!=='idle')return;
+ const end=e=>{if(!dragging)return;const d=dragging;dragging=null;const c=d.c;if(!G.cust.includes(c)||c.phase!=='idle')return;
   if(!d.moved){onCustomerClick(c);return;}
   const st=step(c),p=evPos(e);
   if(st==='exam'&&inZone(p,ZONE.exam))toExam(c);
@@ -629,8 +638,9 @@ function hoyaDialog(focus){
   <span class="row"><span class="tag">สต็อก ${s.stock}${pend?` · ส่ง ${pend}`:''}</span>${need}</span>${act}</div>`;}).join('');
  openModal(`<div class="sheethead"><h2>สั่งสินค้า</h2><button class="btn plain" data-c="1">วางสาย</button></div>
  <p class="note">เงินในร้าน ${fmt(S.money)} · ส่งถึงร้านใน ${deliverTime()} วินาทีเกม · ราคาในเกมสมมติขึ้นเพื่อการเล่น ไม่ได้เกี่ยวข้องกับบริษัทเลนส์จริง</p>
- <h3>เลนส์</h3><div class="grid">${cards}</div><h3>กรอบแว่น</h3><div class="grid">${Object.keys(FRAME_CATS).filter(frameUnlocked).map(k=>{const f=FRAME_CATS[k];return `<div class="item">${sprHTML(f.sprites[0],26)}<span class="tx"><b>${f.name}</b><small>ทุน ${fmt(f.cost)} · ขาย ${fmt(f.price)} · มี ${frameStock(k)} ชิ้น</small></span><button class="btn" data-buyf="${k}" ${S.money<f.cost*5?'disabled':''}>สั่ง 5 ${fmt(f.cost*5)}</button></div>`;}).join('')}</div>`);
+ <h3>เลนส์</h3><div class="grid">${cards}</div>${ctList().length?`<h3>คอนแทคเลนส์ (สั่งครั้งละ 5 กล่องต่อค่าสายตา)</h3><div class="ctlist">${ctList().map(k=>`<div class="ctrow">${sprHTML(CT[k].spr,50)}<span class="tx"><b>${CT[k].brand}</b><small>${CTTYPE[CT[k].type]} · ทุน ${fmt(CT[k].cost)}/กล่อง</small></span><span class="ctpow">${CTPOW.map(p=>`<button class="tab" data-ctb="${k}|${p}" ${S.money<CT[k].cost*5?'disabled':''}>${p}<small> มี ${ctStock(k,p)}</small></button>`).join('')}</span></div>`).join('')}</div>`:''}<h3>กรอบแว่น</h3><div class="grid">${Object.keys(FRAME_CATS).filter(frameUnlocked).map(k=>{const f=FRAME_CATS[k];return `<div class="item">${sprHTML(f.sprites[0],26)}<span class="tx"><b>${f.name}</b><small>ทุน ${fmt(f.cost)} · ขาย ${fmt(f.price)} · มี ${frameStock(k)} ชิ้น</small></span><button class="btn" data-buyf="${k}" ${S.money<f.cost*5?'disabled':''}>สั่ง 5 ${fmt(f.cost*5)}</button></div>`;}).join('')}</div>`);
  const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;
+ m.querySelectorAll('[data-ctb]').forEach(b=>b.onclick=()=>{const[k,q]=b.dataset.ctb.split('|');ctBuy(k,q);hoyaDialog();renderRail();});
  m.querySelectorAll('[data-buyf]').forEach(b=>b.onclick=()=>{buyFrames(b.dataset.buyf);hoyaDialog();renderRail();});
  m.querySelectorAll('[data-list]').forEach(b=>b.onclick=()=>order(b.dataset.list,true));
  m.querySelectorAll('[data-order]').forEach(b=>b.onclick=()=>order(b.dataset.order,false));
@@ -642,7 +652,7 @@ function order(id,list){const l=LENSES[id],s=lensState(id),cost=l.cost*l.pack+(l
 
 let shopTab='exam';
 function shopDialog(){
- const tabs=[['exam','เครื่องตรวจ'],['lab','ห้องช่าง'],['frame','ชั้นวางกรอบ'],['shop','ปรับปรุงร้าน'],['floor','พื้นร้าน']];
+ const tabs=[['exam','เครื่องตรวจ'],['lab','ห้องช่าง'],['frame','ชั้นวางกรอบ'],['contact','คอนแทคเลนส์'],['shop','ปรับปรุงร้าน'],['floor','พื้นร้าน']];
  let body='';
  if(shopTab==='floor'){body=`<div class="grid">${FLOORS.map((n,i)=>{const o=S.floors[i];const p=i===0?0:4000+i*1800;
    return `<button class="item ${o?'owned':''}" data-floor="${i}" ${!o&&S.money<p?'disabled':''}><span class="tx"><b>${n}</b><small>${S.floor===i?'ใช้อยู่':o?'กดเพื่อใช้':'ลูกค้ารอนานขึ้น 1%'}</small></span><span class="price">${o?'':fmt(p)}</span></button>`;}).join('')}</div>`;}
@@ -652,7 +662,7 @@ function shopDialog(){
  <div class="tabs" role="tablist">${tabs.map(([k,n])=>`<button class="tab ${k===shopTab?'on':''}" data-tab="${k}" role="tab" aria-selected="${k===shopTab}">${n}</button>`).join('')}</div>${body}`);
  const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;
  m.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{shopTab=b.dataset.tab;shopDialog();});
- m.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const s=SHOPBY[b.dataset.buy];if(S.money<s.price)return;spend('equip',s.price);G.today.buy+=s.price;S.owned[s.id]=true;Object.keys(FRAME_CATS).forEach(k=>{if(FRAME_CATS[k].shelf===s.id)S.frames[k]=frameStock(k)+5;});beep('buy');log(`ซื้อ ${s.name} แล้ว`,'g');saveGame(true);shopDialog();renderRail();});
+ m.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const s=SHOPBY[b.dataset.buy];if(S.money<s.price)return;spend('equip',s.price);G.today.buy+=s.price;S.owned[s.id]=true;if(s.id==='ctcorner')CTPOW.forEach(p=>{S.ct['acuvue|'+p]=2;});Object.keys(FRAME_CATS).forEach(k=>{if(FRAME_CATS[k].shelf===s.id)S.frames[k]=frameStock(k)+5;});beep('buy');log(`ซื้อ ${s.name} แล้ว`,'g');saveGame(true);shopDialog();renderRail();});
  m.querySelectorAll('[data-floor]').forEach(b=>b.onclick=()=>{const i=+b.dataset.floor;const p=4000+i*1800;if(!S.floors[i]){if(S.money<p)return;spend('equip',p);G.today.buy+=p;S.floors[i]=true;beep('buy');}S.floor=i;saveGame(true);shopDialog();renderRail();});
 }
 function staffDialog(){
@@ -699,26 +709,26 @@ function afterDayMenu(){openModal(`<div class="sheethead"><h2>พร้อมเ
 /* ---------- side rail ---------- */
 function stars(){const n=Math.round(S.rep*2)/2;let s='';for(let i=1;i<=5;i++)s+=n>=i?'★':n>=i-.5?'⯪':'☆';return s;}
 function hintText(){if(G.mobile)return mobileHint();const idle=G.cust.filter(c=>c.phase==='idle'&&!c.owner);
- if(editLayout)return'ลากโซนไปวาง ชั้นวางใกล้ลูกค้าช่วยลดเวลาเดิน';if(G.summary)return'เตรียมร้านให้พร้อม แล้วกดปุ่มเปิดร้านด้านขวา';if(G.closing)return G.cust.length?'ปิดรับลูกค้าใหม่แล้ว ดูแลคนที่เหลือให้เสร็จ':'เลิกงาน!';
+ if(G.summary)return'เตรียมร้านให้พร้อม แล้วกดปุ่มเปิดร้านด้านขวา';if(G.closing)return G.cust.length?'ปิดรับลูกค้าใหม่แล้ว ดูแลคนที่เหลือให้เสร็จ':'เลิกงาน!';
  const f=G.queue[0];if(f&&f.phase==='counter'&&!f.owner)return'คลิกลูกค้าที่เคาน์เตอร์เพื่อคิดเงิน';
  if(G.jobs.some(j=>!j.owner))return'คลิกโต๊ะช่างเพื่อประกอบแว่น';
  const c=idle[0];if(!c){const ch=G.cust.find(c=>c.phase==='atChair'&&!c.owner);if(ch)return'คลิกลูกค้าที่ห้องตรวจเพื่อเริ่มวัดตา';return G.cust.length?'รอลูกค้าเสร็จขั้นตอน…':'รอลูกค้าเข้าร้าน เปิดร้านค้าเพื่อซื้อของได้เลย';}
- return {exam:`ลาก${c.name}ไปที่ห้องตรวจ`,lens:`คลิก${c.name}เพื่อแนะนำเลนส์`,frame:`คลิก${c.name}เพื่อไปเลือกกรอบที่ชั้นวาง`,pay:`ลาก${c.name}ไปเคาน์เตอร์เพื่อคิดเงิน`,repair:`คลิก${c.name}เพื่อรับงานซ่อมแว่น`,lab:''}[step(c)]||'';}
+ return {exam:`ลาก${c.name}ไปที่ห้องตรวจ`,lens:`คลิก${c.name}เพื่อแนะนำเลนส์`,frame:`คลิก${c.name}เพื่อไปเลือกกรอบที่ชั้นวาง`,pay:`ลาก${c.name}ไปเคาน์เตอร์เพื่อคิดเงิน`,repair:`คลิก${c.name}เพื่อรับงานซ่อมแว่น`,contact:`คลิก${c.name}เพื่อไปจ่ายคอนแทคเลนส์`,lab:''}[step(c)]||'';}
 let railKey='';
 function setHTML(el,h){if(el._h!==h){el._h=h;el.innerHTML=h;}}
 function renderRail(){if(!S||!G||screen!=='play')return;
  const r=$('#rail');
  if(railKey!==S.code||!r.firstChild){railKey=S.code;r.innerHTML=`<div class="card" id="rStat"></div>
  <button class="btn gold openbtn" id="rOpen" hidden></button>
- <div class="railbtns"><button class="btn violet" id="rShop">ซื้อของ</button><button class="btn green" id="rStaff">จ้างคน</button><button class="btn" id="rTrain">อบรม</button><button class="btn gold" id="rHoya">สั่งสินค้า</button><button class="btn" id="rMap">แผนที่แข่ง</button><button class="btn" id="rAcct">บัญชี</button><button class="btn" id="rTro">โทรฟี่</button><button class="btn red" id="rHosp">โรงพยาบาล</button><button class="btn" id="rSave">เซฟเกม</button><button class="btn" id="rQuest">ภารกิจ</button><button class="btn" id="rLay">จัดร้าน</button><button class="btn plain" id="rOpt">ตั้งค่า</button><button class="btn plain" id="rMenu">เมนูหลัก</button></div>
+ <div class="railbtns"><button class="btn violet" id="rShop">ซื้อของ</button><button class="btn green" id="rStaff">จ้างคน</button><button class="btn" id="rTrain">อบรม</button><button class="btn gold" id="rHoya">สั่งสินค้า</button><button class="btn" id="rMap">แผนที่แข่ง</button><button class="btn" id="rAcct">บัญชี</button><button class="btn" id="rTro">โทรฟี่</button><button class="btn red" id="rHosp">โรงพยาบาล</button><button class="btn" id="rSave">เซฟเกม</button><button class="btn" id="rQuest">ภารกิจ</button><button class="btn plain" id="rOpt">ตั้งค่า</button><button class="btn plain" id="rMenu">เมนูหลัก</button></div>
  <div class="card" id="rStock"></div><div class="card feed" id="rFeed" aria-live="polite"></div><div class="card mini" id="rDay"></div><div class="card mini" id="rCloud"></div><div class="mini verline">เวอร์ชัน ${GAME_VERSION}</div>`;
-  $('#rOpen').onclick=()=>{closeModal();openDay();};$('#rQuest').onclick=questDialog;$('#rLay').onclick=layoutMode;$('#rHosp').onclick=()=>hospitalDialog();$('#rTrain').onclick=trainDialog;$('#rMap').onclick=mapDialog;$('#rAcct').onclick=accountDialog;$('#rTro').onclick=trophyDialog;$('#rShop').onclick=shopDialog;$('#rStaff').onclick=staffDialog;$('#rHoya').onclick=()=>hoyaDialog();$('#rSave').onclick=()=>saveGame();
+  $('#rOpen').onclick=()=>{closeModal();openDay();};$('#rQuest').onclick=questDialog;$('#rHosp').onclick=()=>hospitalDialog();$('#rTrain').onclick=trainDialog;$('#rMap').onclick=mapDialog;$('#rAcct').onclick=accountDialog;$('#rTro').onclick=trophyDialog;$('#rShop').onclick=shopDialog;$('#rStaff').onclick=staffDialog;$('#rHoya').onclick=()=>hoyaDialog();$('#rSave').onclick=()=>saveGame();
   $('#rOpt').onclick=optionDialog;$('#rMenu').onclick=()=>{saveGame(true);railKey='';showTitle();};}
  const ob=$('#rOpen');const canOpen=!!G.summary&&!G.mobile&&!G.event;ob.hidden=!canOpen;if(canOpen)ob.textContent=`เปิดร้านวันที่ ${dayInMonth(S.day)}/${MONTH_DAYS}`;
  $('#hint').textContent=hintText();
  setHTML($('#rStat'),`<div class="statrow"><span class="money">${fmt(S.money)}</span><span class="stars" title="ชื่อเสียงร้าน ${S.rep.toFixed(1)}/5">${stars()}</span></div>
  <div class="statrow mini" style="margin-top:4px"><span>เดือน ${monthOf(S.day)} วันที่ ${dayInMonth(S.day)}/${MONTH_DAYS} · รหัส ${S.code}</span><span>${G.closing?'ปิดรับลูกค้า':'เหลือ '+Math.ceil(Math.max(0,DAY_LEN-S.dayT))+' วิ'}</span></div>
- <div class="timebar"><i style="width:${Math.min(100,S.dayT/DAY_LEN*100).toFixed(1)}%"></i></div><div class="statrow mini" style="margin-top:4px"><span>ร้าน Lv.${S.level} · EXP ${S.xp}/${xpNeed(S.level)}</span></div><div class="mini">เป้าวันนี้ ${fmt(G.today.rev+G.today.tip)}/${fmt(dailyTarget())}</div>`);
+ <div class="timebar"><i style="width:${Math.min(100,S.dayT/DAY_LEN*100).toFixed(1)}%"></i></div><div class="statrow mini" style="margin-top:4px"><span>ร้าน Lv.${S.level} · EXP ${S.xp}/${xpNeed(S.level)}</span></div>${S.penalty?`<div class="penalty">ชื่อเสียงตก: ขายลดราคา ${S.penalty}% จนกว่าจะกลับถึง ${PEN_CLEAR} ดาว (ตอนนี้ ${S.rep.toFixed(1)})</div>`:''}<div class="mini">เป้าวันนี้ ${fmt(G.today.rev+G.today.tip)}/${fmt(dailyTarget())}</div>`);
  const stock=Object.keys(S.lens).filter(k=>S.lens[k].listed).map(k=>`<span class="tag ${S.lens[k].stock<=1?'no':''}">${LENSES[k].name} ${S.lens[k].stock}</span>`).join(' ');
  setHTML($('#rStock'),`<div class="mini">สต็อกเลนส์ (คู่)</div><div class="row" style="gap:4px;margin-top:4px">${stock||'<span class="mini">ยังไม่มีเลนส์</span>'}</div>${G.deliveries.length?`<div class="mini">กำลังส่ง: ${G.deliveries.map(d=>`${LENSES[d.id].name} ${Math.ceil(d.t)} วิ`).join(' · ')}</div>`:''}`);
  setHTML($('#rFeed'),G.feed.length?G.feed.map(f=>`<div class="${f.c||''}">${esc(f.m)}</div>`).join(''):'<div class="mini">เหตุการณ์ในร้านจะแสดงที่นี่</div>');
@@ -747,9 +757,8 @@ function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onloa
 async function boot(){ATLAS=window.ATLAS_DATA;
  [IMG.atlas,IMG.floors,IMG.title,IMG.map]=await Promise.all([loadImg(window.IMG_ATLAS),loadImg(window.IMG_FLOORS),loadImg(window.IMG_TITLE),loadImg(window.IMG_MAP)]);
  const st=document.createElement('style');st.textContent=`.spr{background-image:url(${window.IMG_ATLAS});background-repeat:no-repeat}`;document.head.appendChild(st);
- $('#layoutBar').onclick=endLayout;
  cv=$('#stage');cv.width=W*SCALE;cv.height=H*SCALE;ctx=cv.getContext('2d');initInput();
  if(document.fonts&&document.fonts.load)document.fonts.load('500 14px Mitr').catch(()=>{});
  cloud.init();showTitle();requestAnimationFrame(frame);}
 boot();
-window.__g={showRandom,setRand:v=>{RAND_ON=v;},layoutMode,endLayout,layoutOk,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};
+window.__g={showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};

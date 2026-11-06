@@ -121,15 +121,15 @@ function staffStep(g,s,dt){if(!s.task&&s.q.length)s.task=s.q.shift(),s.prog=0;
  if(p.need==='exam'){addStaffXp(s.key,6);const r=genRecord(p.k);r.k=p.k;r.name=p.name;g.recs.push(r);softPlay('ok');g.fx.push({x:seat.x,y:seat.y-110,t:1,text:'บันทึกผลแล้ว',col:'#1f5fd0'});
   if(p.wantAdvice){p.need='advice';p.pat=Math.min(100,p.pat+40);}else removePerson(g,p);}
  else{const v=Math.round(rnd(1500,5000)*(1+MISSIONS.indexOf(g.m)*.5));g.sales+=v;g.advice++;earn('lens',v);S.accComm+=v*COMM.sales;S.stats.total+=v;G.today.rev+=v;addStaffXp(s.key,6);softPlay('coin');g.fx.push({x:seat.x,y:seat.y-110,t:1.2,text:'+'+fmt(v),col:'#2f9e3f'});removePerson(g,p);}}
-function mobileClick(pos){const g=G.mobile;if(!g.started||g.ended)return;
+function mobileClick(pos0){const pos={x:pos0.x*MW/W,y:pos0.y*MW/W};const g=G.mobile;if(!g.started||g.ended)return;
  const st=g.staff.find(s=>Math.abs(pos.x-s.x)<40&&pos.y<s.y+8&&pos.y>s.y-100);if(st){g.sel=st;softPlay('pick');return;}
  const p=g.seats.find((q,i)=>q&&Math.abs(pos.x-MSEATS[i].x)<62&&pos.y<MSEATS[i].y+8&&pos.y>MSEATS[i].y-125);if(!p)return;
  const need=p.need==='exam'?'od':'sales';if(p.staff){toast('มีคนรับงานนี้แล้ว');return;}
  let s=g.sel;if(s&&s.role!==need){softPlay('bad');toast(need==='od'?'คนนี้รอวัดตา ต้องใช้พนักงานตรวจสายตา':'คนนี้รอคำแนะนำเลนส์ ต้องใช้พนักงานขาย');return;}
  if(!s){const c=g.staff.filter(x=>x.role===need);s=c.find(x=>!x.task&&!x.q.length)||c.sort((a,b)=>a.q.length-b.q.length)[0];}
  if(s.q.length>=3){toast('คิวของพนักงานคนนี้เต็ม');return;}p.staff=s;s.q.push(p);softPlay('pick');}
-function drawMobile(){const g=G.mobile,m=g.m;ctx.setTransform(SCALE,0,0,SCALE,0,0);
- ctx.fillStyle='#a9dcf5';ctx.fillRect(0,0,W,170);ctx.fillStyle='#bfe3a0';ctx.fillRect(0,170,W,140);ctx.fillStyle='#e9dfc9';ctx.fillRect(0,300,W,380);ctx.fillStyle='#d9ccb0';for(let y=300;y<H;y+=40)ctx.fillRect(0,y,W,1);
+function drawMobile(){const g=G.mobile,m=g.m;ctx.setTransform(SCALE*W/MW,0,0,SCALE*W/MW,0,0);
+ ctx.fillStyle='#a9dcf5';ctx.fillRect(0,0,MW,170);ctx.fillStyle='#bfe3a0';ctx.fillRect(0,170,MW,140);ctx.fillStyle='#e9dfc9';ctx.fillRect(0,300,MW,380);ctx.fillStyle='#d9ccb0';for(let y=300;y<MH;y+=40)ctx.fillRect(0,y,MW,1);
  if(!m.noHosp)sprFeet('h_hosp',135,300,270);else{sprFeet('plant',60,300,120);sprFeet('h_flag',170,300,120);}if(hasKit('truck'))sprFeet('k_truck',770,312,200);else sprFeet('h_flag',780,300,120);
  sprFeet('k_tent',450,300,230);sprFeet('k_table',450,316,84);sprFeet('k_chart',310,305,110);sprFeet('h_free',600,308,90);
  if(hasKit('auto'))sprFeet('k_auto',235,350,80);if(hasKit('water'))sprFeet('k_water',860,380,90);
@@ -142,7 +142,7 @@ function drawMobile(){const g=G.mobile,m=g.m;ctx.setTransform(SCALE,0,0,SCALE,0,
  ctx.fillStyle='rgba(22,32,74,.92)';ctx.fillRect(170,6,560,52);ctx.textBaseline='middle';ctx.textAlign='center';ctx.font='500 22px Mitr,"Noto Sans Thai",Tahoma,sans-serif';ctx.fillStyle=g.t<20?'#ff8a8a':'#ffd34d';ctx.fillText(`${Math.max(0,Math.ceil(g.t))} วิ`,225,32);
  ctx.font='400 14px Mitr,"Noto Sans Thai",Tahoma,sans-serif';ctx.textAlign='left';ctx.fillStyle='#fff';ctx.fillText(`ตรวจแล้ว ${g.recs.length}/${m.target} คน`,285,22);ctx.fillText(`ยอดขาย ${fmt(g.sales)}/${fmt(m.sales)}`,285,44);ctx.fillText(`รอไม่ไหว ${g.missed} คน`,520,22);ctx.fillText(m.hospital,520,44);
  g.fx.forEach(f=>{ctx.globalAlpha=clamp(f.t,0,1);label(f.x,f.y-(1.2-f.t)*20,f.text,f.col,'#fff',14);ctx.globalAlpha=1;});
- if(!g.started){ctx.fillStyle='rgba(22,32,74,.72)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle='#ffd34d';ctx.font='500 110px Mitr,"Noto Sans Thai",Tahoma,sans-serif';ctx.fillText(Math.ceil(g.count),W/2,H/2-30);ctx.font='400 22px Mitr,"Noto Sans Thai",Tahoma,sans-serif';ctx.fillStyle='#fff';ctx.fillText('กดพนักงาน แล้วกดคนที่รอ ให้ทันเวลา',W/2,H/2+50);}}
+ if(!g.started){ctx.fillStyle='rgba(22,32,74,.72)';ctx.fillRect(0,0,MW,MH);ctx.textAlign='center';ctx.fillStyle='#ffd34d';ctx.font='500 110px Mitr,"Noto Sans Thai",Tahoma,sans-serif';ctx.fillText(Math.ceil(g.count),MW/2,MH/2-30);ctx.font='400 22px Mitr,"Noto Sans Thai",Tahoma,sans-serif';ctx.fillStyle='#fff';ctx.fillText('กดพนักงาน แล้วกดคนที่รอ ให้ทันเวลา',MW/2,MH/2+50);}}
 function drawPerson(g,p,i){const s=MSEATS[i];const a=ATLAS.pos['s'+p.k];const pop=clamp(p.t*5,0,1);const h=118*pop;if(h>2)sprFeet('s'+p.k,s.x,s.y,h);
  if(pop<1)return;const k=p.need==='exam'?'ic_clip':'ic_q';drawIcon(k,s.x,s.y-128,34*(p.staff?1:1+Math.sin(p.t*5)*.07));const col=p.pat>55?'#2f9e3f':p.pat>25?'#f08a12':'#d8324a';bar(s.x-30,s.y-106,60,7,p.pat/100,col);}
 function mobileHint(){const g=G.mobile;if(!g.started)return'เตรียมตัว…';return g.sel?(g.sel.role==='od'?'เลือกพนักงานตรวจตาแล้ว กดคนที่ขึ้นคลิปบอร์ด':'เลือกพนักงานขายแล้ว กดคนที่ขึ้น ?'):'กดพนักงาน แล้วกดคนที่รอ คลิปบอร์ด = วัดตา, ? = แนะนำเลนส์';}

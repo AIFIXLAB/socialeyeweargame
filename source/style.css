@@ -156,3 +156,10 @@ button.mpin:hover .spr{transform:translateY(-3px)}
 .evhead{display:flex;justify-content:center}
 .evchoices{display:flex;flex-wrap:wrap;gap:8px}.evchoices .btn{flex:1;min-width:220px}
 #rail>*{flex:none}
+
+.penalty{background:#ffd9dd;color:#90132a;border-radius:5px;padding:3px 7px;font-size:13px;margin-top:4px;font-weight:600}
+.ctlist{display:grid;gap:6px}
+.ctrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff;border:2px solid var(--ink);border-radius:6px;padding:5px 8px}
+.ctrow .tx{flex:1;min-width:130px}.ctrow b{display:block;font:500 14px var(--display)}.ctrow small{color:var(--muted)}
+.ctpow{display:flex;flex-wrap:wrap;gap:4px}.ctpow .tab{font-size:13px;min-height:36px;padding:3px 7px;background:#fff}.ctpow .tab small{color:inherit}
+.ctpow .tab.empty{background:#efebe0;color:var(--muted)}

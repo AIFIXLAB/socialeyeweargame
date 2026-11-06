@@ -1,27 +1,16 @@
 /* ===== NavSystem: ชนสิ่งของและหาเส้นทาง ===== */
 const CELL=20,NCOL=Math.ceil(W/CELL),NROW=Math.ceil(H/CELL);
-const GROUPS={
- frames:{name:'ชั้นวางกรอบ',x:30,y:215,w:340,h:125,solid:[[30,272,330,62]]},
- lab:{name:'โต๊ะช่าง',x:600,y:210,w:280,h:155,solid:[[640,275,190,60]]},
- counter:{name:'เคาน์เตอร์',x:610,y:432,w:270,h:112,solid:[[620,495,250,47]]},
- exam:{name:'ห้องตรวจ',x:10,y:395,w:335,h:275,solid:[[12,445,45,30],[55,478,75,40]]},
- wait:{name:'ที่นั่งรอ',x:355,y:372,w:190,h:82,solid:[[368,405,165,42]]}
-};
-const BASE=JSON.parse(JSON.stringify({SPOT,CHAIRS,QUEUE,SEATS,ZONE}));
-function gOff(g){return (S&&S.layout&&S.layout[g])||[0,0];}
-function applyLayout(){const mv=(o,b,g)=>{const[d,e]=gOff(g);o.x=b.x+d;o.y=b.y+e;};
- mv(SPOT.frames,BASE.SPOT.frames,'frames');mv(ZONE.frames,BASE.ZONE.frames,'frames');mv(SPOT.lab,BASE.SPOT.lab,'lab');mv(ZONE.lab,BASE.ZONE.lab,'lab');
- mv(SPOT.cash,BASE.SPOT.cash,'counter');mv(SPOT.counter,BASE.SPOT.counter,'counter');mv(ZONE.counter,BASE.ZONE.counter,'counter');QUEUE.forEach((q,i)=>mv(q,BASE.QUEUE[i],'counter'));
- const[ex,ey]=gOff('exam');CHAIRS.forEach((c,i)=>{const b=BASE.CHAIRS[i];c.x=b.x+ex;c.y=b.y+ey;c.sx=b.sx+ex;c.sy=b.sy+ey;});ZONE.exam.x=BASE.ZONE.exam.x+ex;ZONE.exam.y=BASE.ZONE.exam.y+ey;
- const[wx,wy]=gOff('wait');SEATS.forEach((s,i)=>{s.x=BASE.SEATS[i].x+wx;s.y=BASE.SEATS[i].y+wy;});navKey='';}
+function gOff(){return[0,0];}
+function applyLayout(){navKey='';}
 let navKey='',navGrid=null;
-function solidRects(){const out=[];Object.keys(GROUPS).forEach(g=>{const[d,e]=gOff(g);GROUPS[g].solid.forEach(r=>out.push([r[0]+d,r[1]+e,r[2],r[3]]));});
- const[wx,wy]=gOff('wait');if(own('seat1'))out.push([368+wx,535+wy,165,42]);const[ex,ey]=gOff('exam');if(own('chair2'))out.push([12+ex,585+ey,45,30],[55+ex,618+ey,75,40]);return out;}
-function grid(){const k=JSON.stringify([S.layout,own('seat1'),own('chair2')]);if(k===navKey&&navGrid)return navGrid;navKey=k;const a=new Uint8Array(NCOL*NROW);
- for(let y=0;y<NROW;y++)for(let x=0;x<NCOL;x++){const px=x*CELL+CELL/2,py=y*CELL+CELL/2;if(py<322||px<18||px>H+W-H-18||py>H-4)a[y*NCOL+x]=1;}
+function solidRects(){const out=[[30,368,450,30],[0,487,428,18],[0,677,428,18],[792,462,408,18],[810,672,390,18],[820,360,370,28],[870,755,230,32],[525,560,170,34],[55,605,80,24]];
+ WALLS_V.forEach(([x,a,b])=>out.push([x,a,18,b-a]));
+ if(own('seat1'))out.push([525,715,170,34]);if(own('chair2'))out.push([55,800,80,24]);if(own('ctcorner'))out.push([835,600,360,34],[1030,630,160,28]);return out;}
+function grid(){const k=JSON.stringify([own('ctcorner'),own('seat1'),own('chair2')]);if(k===navKey&&navGrid)return navGrid;navKey=k;const a=new Uint8Array(NCOL*NROW);
+ for(let y=0;y<NROW;y++)for(let x=0;x<NCOL;x++){const px=x*CELL+CELL/2,py=y*CELL+CELL/2;if(py<305||px<18||px>W-18||py>H-4)a[y*NCOL+x]=1;}
  solidRects().forEach(([x,y,w,h])=>{for(let cy=Math.floor(y/CELL);cy<=Math.floor((y+h)/CELL);cy++)for(let cx=Math.floor(x/CELL);cx<=Math.floor((x+w)/CELL);cx++)if(cx>=0&&cy>=0&&cx<NCOL&&cy<NROW)a[cy*NCOL+cx]=1;});
  navGrid=a;return a;}
-function freePoint(x,y){if(x<18||x>W-18||y<322||y>H-4)return false;return !solidRects().some(([a,b,w,h])=>x>=a&&x<=a+w&&y>=b&&y<=b+h);}
+function freePoint(x,y){if(x<18||x>W-18||y<305||y>H-4)return false;return !solidRects().some(([a,b,w,h])=>x>=a&&x<=a+w&&y>=b&&y<=b+h);}
 function cellOf(x,y){return[clamp(Math.floor(x/CELL),0,NCOL-1),clamp(Math.floor(y/CELL),0,NROW-1)];}
 function nearestFree(c){const g=grid();if(!g[c[1]*NCOL+c[0]])return c;for(let r=1;r<14;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const x=c[0]+dx,y=c[1]+dy;if(x>=0&&y>=0&&x<NCOL&&y<NROW&&!g[y*NCOL+x])return[x,y];}return c;}
 function findPath(sx,sy,tx,ty){const g=grid(),s=nearestFree(cellOf(sx,sy)),t=nearestFree(cellOf(tx,ty));const si=s[1]*NCOL+s[0],ti=t[1]*NCOL+t[0];if(si===ti)return[];
@@ -41,13 +30,13 @@ const KEYS={};
 const KEYMAP={w:[0,-1],arrowup:[0,-1],s:[0,1],arrowdown:[0,1],a:[-1,0],arrowleft:[-1,0],d:[1,0],arrowright:[1,0]};
 function typing(e){const t=e.target&&e.target.tagName;return t==='INPUT'||t==='TEXTAREA';}
 document.addEventListener('keydown',e=>{if(typing(e)||!G||!S||screen!=='play')return;const k=e.key.toLowerCase();
- if(k==='escape'&&$('#modal').hidden&&!editLayout){pauseDialog();return;}
+ if(k==='escape'&&$('#modal').hidden){pauseDialog();return;}
  if(!$('#modal').hidden||G.mobile)return;
  if(KEYMAP[k]){KEYS[k]=1;e.preventDefault();}if(k==='shift')KEYS.shift=1;if(k==='e'&&!e.repeat&&!paused)interact();});
 document.addEventListener('keyup',e=>{const k=e.key.toLowerCase();delete KEYS[k];});
 window.addEventListener('blur',()=>{Object.keys(KEYS).forEach(k=>delete KEYS[k]);});
 function keyMove(dt){let dx=0,dy=0;Object.keys(KEYS).forEach(k=>{if(KEYMAP[k]){dx+=KEYMAP[k][0];dy+=KEYMAP[k][1];}});const p=G.player;if(!dx&&!dy){p.keying=false;return false;}
- const l=Math.hypot(dx,dy),sp=moveSpeed()*(KEYS.shift?1.5:1)*dt;const nx=p.x+dx/l*sp,ny=p.y+dy/l*sp;if(freePoint(nx,p.y))p.x=nx;if(freePoint(p.x,ny))p.y=ny;
+ const l=Math.hypot(dx,dy),sp=moveSpeed()*(KEYS.shift?1.5:1)*dt;const nx=p.x+dx/l*sp,ny=p.y+dy/l*sp;const stuck=!freePoint(p.x,p.y);if(stuck||freePoint(nx,p.y))p.x=nx;if(stuck||freePoint(p.x,ny))p.y=ny;
  p.moving=true;p.t=(p.t||0)+dt;p.keying=true;p.stay=true;p.nav=null;if(Math.abs(dx)>Math.abs(dy)){p.dir='s';p.flip=dx>0;}else{p.dir=dy>0?'f':'b';p.flip=false;}return true;}
 function interact(){const p=G.player;const near=[...G.cust].filter(c=>c.phase!=='leaving'&&c.phase!=='angry').sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];
  if(near&&Math.hypot(near.x-p.x,near.y-p.y)<110){onCustomerClick(near);return;}
@@ -127,18 +116,6 @@ function showRandom(id){const e=id?RANDOM.find(x=>x.id===id):pick(RANDOM.filter(
  <div class="evchoices">${cs.map((x,i)=>`<button class="btn ${x.cost?'red':'green'}" data-ev="${i}" ${x.cost&&!x.c.force&&S.money<x.cost?'disabled':''}>${x.c.t}${x.cost?` · จ่าย ${fmt(x.cost)}`:''}</button>`).join('')}</div>`,{lock:true});
  $('#modal').querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{const x=cs[+b.dataset.ev];if(x.cost)incident(x.cost);Object.assign(G.dayFx,x.c.fx||{});if(x.c.run)x.c.run();G.dayNote=e.title;closeModal();log(`${e.title}: ${x.c.done}${x.cost?` (จ่าย ${fmt(x.cost)})`:''}`,x.cost?'r':'g');toast(x.c.done);saveGame(true);renderRail();});}
 
-/* ---------- จัดร้าน: ลากโซนไปวางบนกริด ---------- */
-let editLayout=null;
-function layoutMode(){if(G.mobile||G.event||G.cust.length){toast('จัดร้านได้เมื่อไม่มีลูกค้าในร้าน');return;}editLayout={drag:null};paused++;const b=$('#hint');toast('ลากโซนไปวางที่ใหม่ แล้วกดเสร็จสิ้น');$('#layoutBar').hidden=false;renderRail();}
-function endLayout(){if(!editLayout)return;editLayout=null;paused=Math.max(0,paused-1);$('#layoutBar').hidden=true;saveGame(true);G.player.nav=null;G.player.x=SPOT.home.x;G.player.y=SPOT.home.y;G.workers.forEach(w=>{w.nav=null;w.task=null;});log('จัดร้านใหม่แล้ว','g');}
-function groupBox(g){const[d,e]=gOff(g),b=GROUPS[g];return{x:b.x+d,y:b.y+e,w:b.w,h:b.h};}
-function layoutOk(g,dx,dy){const b=GROUPS[g],r={x:b.x+dx,y:b.y+dy,w:b.w,h:b.h};if(r.x<8||r.x+r.w>W-8||r.y<190||r.y+r.h>H-2)return false;
- const hit=(a,c)=>a.x<c.x+c.w&&a.x+a.w>c.x&&a.y<c.y+c.h&&a.y+a.h>c.y;if(hit(r,{x:355,y:190,w:190,h:185}))return false;
- return !Object.keys(GROUPS).some(o=>o!==g&&hit(r,groupBox(o)));}
-function layoutDown(p){const g=Object.keys(GROUPS).find(k=>{const b=groupBox(k);return p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h;});if(g)editLayout.drag={g,sx:p.x,sy:p.y,o:[...gOff(g)]};}
-function layoutMove(p){const d=editLayout.drag;if(!d)return;const dx=Math.round((d.o[0]+p.x-d.sx)/CELL)*CELL,dy=Math.round((d.o[1]+p.y-d.sy)/CELL)*CELL;if(layoutOk(d.g,dx,dy)){S.layout[d.g]=[dx,dy];applyLayout();}}
-function drawLayoutEdit(){ctx.save();Object.keys(GROUPS).forEach(k=>{const b=groupBox(k);ctx.strokeStyle=editLayout.drag&&editLayout.drag.g===k?'#f08a12':'#f6b21b';ctx.lineWidth=3;ctx.setLineDash([10,6]);ctx.fillStyle='rgba(246,178,27,.14)';ctx.fillRect(b.x,b.y,b.w,b.h);ctx.strokeRect(b.x,b.y,b.w,b.h);ctx.setLineDash([]);label(b.x+b.w/2,b.y+16,GROUPS[k].name,'#16204a','#fff');});ctx.restore();}
-
 /* ---------- ลีกแข่งขัน ---------- */
 const LEAGUES=[['Bronze League',0],['Silver League',2],['Gold League',4],['Diamond League',7],['City Champion',10]];
 function leagueName(){let n=LEAGUES[0][0];LEAGUES.forEach(l=>{if(S.ev.wins>=l[1])n=l[0];});return n;}
@@ -149,3 +126,60 @@ function eventAdd(total,score){const e=G.event;if(!e)return;e.me+=e.mode==='fast
 /* ---------- ซื้อกรอบ ---------- */
 function frameStock(cat){return S.frames[cat]||0;}
 function buyFrames(cat){const f=FRAME_CATS[cat],c=f.cost*5;if(S.money<c)return false;spend('frameCost',c);S.frames[cat]=frameStock(cat)+5;softPlay('buy');log(`สั่ง${f.name} 5 ชิ้น`);return true;}
+
+/* ---------- ลูกค้าพิเศษ: เพิ่มประเภทใหม่ที่ตารางนี้ ---------- */
+const CTYPE={
+ impatient:{tag:'ใจร้อน',rate:2.2,rep:.25,mul:1.1,col:'#d8324a',say:'ลูกค้าใจร้อนมาแล้ว หลอดวิ่งเร็ว รีบบริการ'},
+ picky:{tag:'ช่างเลือก',rate:.8,rep:.12,mul:1,col:'#8a3fc4',say:'ลูกค้าช่างเลือกมาแล้ว ต้องลองกรอบ 3 ครั้งก่อนซื้อ'},
+ vip:{tag:'VIP',rate:1.4,rep:.35,mul:2,col:'#b8860b',say:'ลูกค้า VIP มาแล้ว จ่ายแพง แต่ต้องการบริการระดับสูง'},
+ bargain:{tag:'ต่อราคา',rate:1,rep:.1,mul:1,col:'#2f8f4e',say:'ลูกค้าต่อราคามาแล้ว ตอนคิดเงินต้องเจรจา'},
+ regular:{tag:'ขาประจำ',rate:.75,rep:.06,mul:1,col:'#1f5fd0',say:'ลูกค้าขาประจำกลับมาแล้ว'},
+ celeb:{tag:'คนดัง',rate:3.2,rep:.6,mul:1,col:'#6a3fc4',say:'ลูกค้าคนดังมาแล้ว! หลอดวิ่งเร็วมาก ถ้าถูกใจจะจ่ายเยอะ'}
+};
+function bargainDialog(c){const sub=c.bill.reduce((a,b)=>a+b.amount,0);const cost=(c.sold||[]).reduce((a,x)=>a+(x.t==='lens'?LENSES[x.id].cost:x.t==='frame'?FRAME_CATS[x.cat].cost:CT[x.id].cost),0);
+ const offers=[[0,.2],[.05,.5],[.1,.8],[.2,1]].filter(o=>o[0]>=(c.minDeal||0));
+ openModal(`<div class="sheethead"><h2>เจรจาราคา</h2></div><div class="say">${sprHTML('p_bargain',100)}<p>ลดให้หน่อยได้ไหมครับ ซื้อตั้ง ${fmt(sub)}</p></div>
+ <table class="ledger"><tbody><tr><td>ยอดบิล</td><td>${fmt(sub)}</td></tr><tr><td>ต้นทุนสินค้าโดยประมาณ</td><td>${fmt(cost)}</td></tr></tbody></table>
+ <div class="evchoices">${offers.map((o,i)=>`<button class="btn ${o[0]?'':'green'}" data-o="${i}">${o[0]?'ลด '+o[0]*100+'%':'ยืนราคา'} · กำไร ${fmt(sub*(1-o[0])-cost)}</button>`).join('')}</div><p class="note">ยิ่งลดน้อย ลูกค้ายิ่งอาจไม่ยอม ถ้าไม่ยอมจะหงุดหงิดและต้องเสนอใหม่</p>`,{lock:true});
+ $('#modal').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const o=offers[+b.dataset.o];if(Math.random()<o[1]){c.deal=o[0];closeModal();softPlay('ok');completeCash(c);}else{c.pat=Math.max(5,c.pat-20);c.minDeal=Math.min(.2,o[0]+.05);softPlay('bad');toast('ลูกค้าไม่ยอม ลองเสนอใหม่');bargainDialog(c);}});}
+
+/* ---------- คอนแทคเลนส์: เพิ่มยี่ห้อใหม่ที่ตารางนี้ ---------- */
+const CTTYPE={day:'รายวัน','2w':'ราย 2 สัปดาห์',month:'รายเดือน',toric:'สำหรับสายตาเอียง',color:'สีแฟชั่น'};
+const CT={
+ acuvue:{brand:'ACUVUE',type:'day',cost:420,price:950,spr:'ct_acuvue',free:1},
+ bl:{brand:'Bausch + Lomb',type:'month',cost:520,price:1200,spr:'ct_bl',shop:10000},
+ alcon:{brand:'Alcon',type:'2w',cost:480,price:1100,spr:'ct_alcon',shop:10000},
+ cooper:{brand:'CooperVision',type:'toric',cost:800,price:1900,spr:'ct_cooper',shop:16000},
+ menicon:{brand:'Menicon',type:'month',cost:650,price:1500,spr:'ct_menicon',shop:13000},
+ seed:{brand:'SEED',type:'color',cost:550,price:1400,spr:'ct_seed',shop:12000}
+};
+const CTPOW=['-1.00','-2.00','-3.00','-4.00','-5.00'];
+function ctOwned(k){return own('ctcorner')&&(CT[k].free||own('ct_'+k));}
+function ctList(){return Object.keys(CT).filter(ctOwned);}
+function ctStock(k,p){return S.ct[k+'|'+p]||0;}
+function ctBuy(k,p){const c=CT[k].cost*5;if(S.money<c)return false;spend('lensBuy',c);S.ct[k+'|'+p]=ctStock(k,p)+5;softPlay('buy');return true;}
+function ctWorkerPick(c,acc){const types=ctList().filter(k=>CT[k].type===c.ctType);const have=types.filter(k=>CTPOW.some(p=>ctStock(k,p)>0));if(!have.length)return null;
+ const k=have.find(x=>ctStock(x,c.ctPow)>0);if(k&&Math.random()<=acc)return[k,c.ctPow];const a=have[0];const near=CTPOW.filter(p=>ctStock(a,p)>0&&(p!==c.ctPow||!k));return near.length?[a,near[0]]:[a,c.ctPow];}
+function contactDialog(c){const rows=ctList().map(k=>{const d=CT[k];return `<div class="ctrow">${sprHTML(d.spr,62)}<span class="tx"><b>${d.brand}</b><small>${CTTYPE[d.type]} · ${fmt(d.price*repMul())}</small></span><span class="ctpow">${CTPOW.map(p=>{const n=ctStock(k,p);return n?`<button class="tab" data-ct="${k}|${p}">${p}<small> ${n}</small></button>`:`<button class="tab empty" data-buy="${k}|${p}" ${S.money<d.cost*5?'disabled':''} title="สั่ง 5 กล่อง">${p}<small> สั่ง</small></button>`;}).join('')}</span></div>`;}).join('');
+ openModal(`<div class="sheethead"><h2>จ่ายคอนแทคเลนส์</h2><button class="btn plain" data-later="1">ไว้ก่อน</button></div>
+ <div class="say">${sprHTML(c.k+'f',84)}<p>ขอคอนแทคเลนส์<b>${CTTYPE[c.ctType]}</b><br>ค่าสายตาในใบวัด <b>${c.ctPow}</b></p></div><div class="ctlist">${rows}</div>
+ <p class="note">ต้องจ่ายให้ตรงทั้งชนิดและค่าสายตา ถ้าไม่ตรงลูกค้าจะไม่พอใจและชื่อเสียงร้านลดลง · กด "สั่ง" เพื่อซื้อเข้า 5 กล่อง ทุน ${fmt(CT[ctList()[0]].cost*5)} ขึ้นไป · ยี่ห้อเป็นเพียงฉากในเกม ราคาสมมติ</p>`,{lock:true,onClose:()=>dropOwner(c,'player')});
+ const m=$('#modal');m.querySelector('[data-later]').onclick=closeModal;
+ m.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const[k,p]=b.dataset.buy.split('|');if(ctBuy(k,p)){m._o={};contactDialog(c);renderRail();}});
+ m.querySelectorAll('[data-ct]').forEach(b=>b.onclick=()=>{const[k,p]=b.dataset.ct.split('|');m._o={};closeModal();G.player.carry='ct_box';softPlay('pick');G.player.tasks.unshift({kind:'deliverCt',c,pid:k,pow:p,x:c.x+50,y:c.y+6,dur:.2});});}
+function chooseContact(c,k,p,who){const d=CT[k];S.ct[k+'|'+p]=Math.max(0,ctStock(k,p)-1);const ok=d.type===c.ctType&&p===c.ctPow;const price=d.price*repMul();
+ bill(c,'lens',`คอนแทคเลนส์ ${d.brand} ${p}`,price,'lens');c.sold.push({t:'contact',id:k});S.stats.contact=(S.stats.contact||0)+1;if(who&&who.role==='sales')workerComm(c,who,price*COMM.sales);
+ c.sat+=ok?1.2:-1.6;G.fx.push({x:c.x,y:c.y-100,t:1.5,text:ok?'ตรงค่าสายตาเลย!':'ค่าสายตาไม่ตรง ใส่ไม่ชัด!',col:ok?'#2f9e3f':'#d8324a'});
+ if(!ok){c.pat=Math.max(5,c.pat-25);S.rep=clamp(S.rep-.15,1,5);S.stats.mismatch=(S.stats.mismatch||0)+1;log(`จ่ายคอนแทคไม่ตรงให้${c.name} ชื่อเสียงลดลง`,'r');}
+ c.si++;c.owner=null;c.phase='idle';softPlay(ok?'ok':'bad');}
+
+/* ---------- โทษชื่อเสียงตก: ขายได้ราคาลดลงจนกว่าจะกลับถึง 3 ดาว ---------- */
+const PEN_RULE=[[1.4,30],[1.9,20],[2.4,10]],PEN_CLEAR=3;
+function updatePenalty(){let p=S.penalty||0;if(S.rep>=PEN_CLEAR)p=0;else{const r=PEN_RULE.find(x=>S.rep<x[0]);if(r&&r[1]>p)p=r[1];}
+ if(p!==(S.penalty||0)){const up=p>(S.penalty||0);S.penalty=p;if(up){softPlay('bad');toast(`ชื่อเสียงตก! ขายได้ราคาลดลง ${p}% จนกว่าชื่อเสียงจะกลับถึง ${PEN_CLEAR} ดาว`);log(`โดนลดราคาขาย ${p}%`,'r');}else{softPlay('buy');toast('ชื่อเสียงกลับมาแล้ว ขายราคาปกติ');log('ราคาขายกลับเป็นปกติ','g');}renderRail();}}
+
+/* ---------- ผังร้าน: ห้องและกำแพง ---------- */
+const WALLS_H=[[0,505,428],[0,695,428],[792,480,408],[810,690,390]];
+const WALLS_V=[[410,505,590],[410,665,790],[410,865,907],[792,296,380],[792,440,480]];
+function drawWalls(list){WALLS_H.forEach(([x,y,w])=>{const low=y===690;list.push({y,fn:()=>{const f=low?24:44;ctx.fillStyle='#16204a';ctx.fillRect(x-2,y-f-10,w+4,f+12);ctx.fillStyle='#fff4dc';ctx.fillRect(x,y-f-8,w,8);ctx.fillStyle='#ecdcbc';ctx.fillRect(x,y-f,w,f-8);ctx.fillStyle='#b98a52';ctx.fillRect(x,y-8,w,8);}});});
+ WALLS_V.forEach(([x,a,b])=>{list.push({y:b,fn:()=>{ctx.fillStyle='#16204a';ctx.fillRect(x-2,a-46,22,b-a+48);ctx.fillStyle='#fff4dc';ctx.fillRect(x,a-44,18,b-a+36);ctx.fillStyle='#b98a52';ctx.fillRect(x,b-8,18,8);}});});}

@@ -2,7 +2,7 @@
  เพิ่มหลักสูตร บริษัท ร้านคู่แข่ง หรือโทรฟี่ใหม่ได้โดยเพิ่มข้อมูลในตาราง ไม่ต้องแก้ระบบหลัก */
 const MONTH_DAYS=10;
 const INCOME={exam:'ค่าตรวจวัดสายตา',lens:'ขายเลนส์',frame:'ขายกรอบ/งานซ่อม',tip:'ทิป',prize:'เงินรางวัลแข่งขัน',branch:'กำไรจากสาขา',reward:'รางวัลโทรฟี่',depInt:'ดอกเบี้ยเงินฝาก'};
-const EXPENSE={rent:'ค่าเช่าร้าน',util:'ค่าน้ำค่าไฟ',salary:'เงินเดือนพนักงาน',comm:'ค่าคอมมิชชัน',lensBuy:'สั่งเลนส์',frameCost:'ต้นทุนกรอบ',equip:'ซื้ออุปกรณ์/ตกแต่ง',hire:'ค่าจ้างเริ่มงาน',train:'ค่าอบรม',incident:'เหตุการณ์ไม่คาดคิด',loanInt:'ดอกเบี้ยเงินกู้',ipo:'ค่าเปิดหุ้น'};
+const EXPENSE={rent:'ค่าเช่าร้าน',util:'ค่าน้ำค่าไฟ',salary:'เงินเดือนพนักงาน',comm:'ค่าคอมมิชชัน',lensBuy:'สั่งเลนส์',frameCost:'ต้นทุนกรอบ',equip:'ซื้ออุปกรณ์/ตกแต่ง',hire:'ค่าจ้างเริ่มงาน',train:'ค่าอบรม',incident:'เหตุการณ์ไม่คาดคิด',loanInt:'ดอกเบี้ยเงินกู้',ipo:'ค่าเปิดหุ้น',attack:'การ์ดโจมตีและป้องกัน'};
 const COMM={sales:.05,od:.10,tech:30};
 function blankLedger(){const o={};Object.keys(INCOME).forEach(k=>o[k]=0);Object.keys(EXPENSE).forEach(k=>o[k]=0);return o;}
 function sumIncome(l){return Object.keys(INCOME).reduce((a,k)=>a+(l[k]||0),0);}
@@ -11,11 +11,12 @@ function earn(k,n){S.money+=n;S.ledger[k]=(S.ledger[k]||0)+n;}
 function spend(k,n){S.money-=n;S.ledger[k]=(S.ledger[k]||0)+n;}
 function monthOf(d){return Math.floor((d-1)/MONTH_DAYS)+1;}
 function dayInMonth(d){return (d-1)%MONTH_DAYS+1;}
-function monthlySalary(k){return STAFF[k].salary*MONTH_DAYS;}
-function rentFee(){return 25000+(own('chair2')?5000:0)+(own('seat2')?3000:0)+S.branches.length*4000;}
-function utilFee(){return 5000+Object.keys(S.owned).length*450+S.staff.length*600;}
+function costK(){return DAY_LEN/150;}
+function monthlySalary(k){return Math.round(STAFF[k].salary*MONTH_DAYS*costK());}
+function rentFee(){return Math.round((25000+(own('chair2')?5000:0)+(own('seat2')?3000:0)+S.branches.length*4000)*costK());}
+function utilFee(){return Math.round((5000+Object.keys(S.owned).length*450+S.staff.length*600)*costK());}
 function salaryFee(){return S.staff.reduce((a,k)=>a+monthlySalary(k),0);}
-function dailyTarget(){return 9000+S.day*700;}
+function dailyTarget(){return Math.round((9000+S.day*700)*costK());}
 
 /* ---------- พนักงาน: เลเวล ประสบการณ์ ---------- */
 const STAFF_YEARS={od1:1,od2:3,od3:8,sl1:.5,sl2:2,sl3:5,te1:.5,te2:2,te3:6};
@@ -86,7 +87,7 @@ function trainDialog(){
   beep('buy');log(`${staffName(trainWho)} เริ่มอบรม ${c.name}`);saveGame(true);trainDialog();renderRail();});
 }
 function tickTraining(){Object.keys(S.staffData).forEach(k=>{const d=S.staffData[k];if(!d.training)return;d.training.left--;if(d.training.left<=0){const c=COURSE[d.training.id];d.courses.push(c.id);d.training=null;addStaffXp(k,60);log(`${staffName(k)} ผ่าน ${c.name} แล้ว`,'g');}});}
-function isTraining(k){if(G&&G.dayFx&&G.dayFx.sick===k)return true;const d=S.staffData[k];return !!(d&&d.training&&k!=='owner');}
+function isTraining(k){if(G&&G.mpT&&G.mpT.strike>0&&k!=='owner')return true;if(G&&G.dayFx&&G.dayFx.sick===k)return true;const d=S.staffData[k];return !!(d&&d.training&&k!=='owner');}
 
 /* ---------- สต็อกและยอดขาย ---------- */
 function recordSale(c){const st=S.stats;(c.sold||[]).forEach(x=>{
@@ -246,7 +247,7 @@ function monthDialog(rec,then){
  ${rec.balance<0?'<p class="err">เงินติดลบ ซื้อของไม่ได้จนกว่าจะขายจนกลับมาเป็นบวก ลองลดพนักงานเพื่อลดเงินเดือน</p>':''}
  ${ledgerTable(rec.l)}${historyBlock()}
  <div class="row"><button class="btn gold" data-ok="1">ไปต่อ</button></div>`,{lock:true,wide:true});
- $('#modal [data-ok]').onclick=()=>{closeModal();if(window.__qaNoCall)return then();bankMonth(()=>cardDialog('ก่อนเริ่มเดือนใหม่',then));};wireCharts();}
+ $('#modal [data-ok]').onclick=()=>{closeModal();if(window.__qaNoCall)return then();bankMonth(()=>cardDialog('ก่อนเริ่มเดือนใหม่',S.mp?()=>vsDraw(then):then));};wireCharts();}
 
 /* ---------- โทรฟี่: เพิ่มโทรฟี่ใหม่ที่ตารางนี้ ---------- */
 const CATS=['เส้นทางเจ้าของร้าน','ยอดขายและการบริหาร','ผู้เชี่ยวชาญด้านเลนส์','การแข่งขันและการขยายร้าน','ความสำเร็จพิเศษ'];

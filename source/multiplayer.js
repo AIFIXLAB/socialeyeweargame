@@ -1,7 +1,9 @@
 /* ===== เล่นกับเพื่อน: ต่างคนต่างขาย แข่งเป้าเดียวกัน โยนการ์ดโจมตีกันได้ ===== */
 const MP_MAX=5,YEAR_DAYS=120,MP_WAIT_END=600;
 const net={ /* รับส่งผ่าน Vercel หรือฐานข้อมูลของการ์ด */
- async create(c,meta){if(cloud.kind==='db'){const r=cloud.db.doc('rooms/'+c),d=await r.get();if(d.exists)return false;await r.set(meta);return true;}const x=await(await this.post({a:'create',code:c,meta})).json();return !!x.ok;},
+ async create(c,meta){if(cloud.kind==='db'){const r=cloud.db.doc('rooms/'+c),d=await r.get();if(d.exists)return false;await this.wipe(c);await r.set(meta);return true;}const x=await(await this.post({a:'create',code:c,meta})).json();return !!x.ok;},
+ async wipe(c){const r=cloud.db.doc('rooms/'+c);for(const n of ['players','events']){const q=await r.collection(n).get();for(const d of q.docs)await r.collection(n).doc(d.id).delete();}},
+ async close(c){if(cloud.kind==='db'){await this.wipe(c);return cloud.db.doc('rooms/'+c).delete();}const x=await this.post({a:'close',code:c});if(!x.ok)throw new Error('http');},
  post(b){return fetch('/api/room',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b),signal:AbortSignal.timeout(8000)});},
  async get(c){if(cloud.kind==='db'){const r=cloud.db.doc('rooms/'+c),m=await r.get();const ps=await r.collection('players').get(),es=await r.collection('events').orderBy('at').limit(1000).get();const players={};ps.docs.forEach(d=>players[d.id]=d.data());return{meta:m.exists?m.data():null,players,events:es.docs.map(d=>d.data())};}const x=await fetch('/api/room?code='+c,{signal:AbortSignal.timeout(8000)});if(!x.ok)throw new Error('http');return x.json();},
  async meta(c,meta){if(cloud.kind==='db')return cloud.db.doc('rooms/'+c).set(meta);return this.post({a:'meta',code:c,meta});},
@@ -43,17 +45,17 @@ function mpForm(host){let g='m',rule={type:'years',years:1},dayLen=60,max=3;cons
    await net.player(code,id,Object.assign(me,{net:15000,day:1,level:1,rep:3,seen:Date.now()}));lobby(code,id,me);
   }catch(x){err.textContent='เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง';}};}
 let lobbyT=0;
-function lobby(code,id,me){clearInterval(lobbyT);const tick=async()=>{let st;try{st=await net.get(code);}catch(e){return;}if(!st.meta)return;
+function lobby(code,id,me){clearInterval(lobbyT);const tick=async()=>{let st;try{st=await net.get(code);}catch(e){return;}if(!st.meta){clearInterval(lobbyT);closeModal();toast('ห้องนี้ถูกปิดแล้ว');return;}
   if(st.meta.status==='playing'){clearInterval(lobbyT);return mpEnter(st,code,id,me);}
   const ps=Object.entries(st.players),host=st.meta.host===id;
   openModal(`<div class="sheethead"><h2>ห้อง ${code}</h2></div><div class="monthhead"><div><small>บอกรหัสนี้ให้เพื่อน</small><b>${code}</b></div><div><small>กติกา</small><b class="rl">${ruleText(st.meta.rule)}</b></div></div>
   <h3>ผู้เล่น ${ps.length}/${st.meta.max||MP_MAX}</h3><table class="ledger"><tbody>${ps.map(([k,p])=>`<tr class="${k===id?'hl':''}"><td>${esc(p.name)}${k===st.meta.host?' (เจ้าของห้อง)':''}</td><td>${esc(p.shop)}</td></tr>`).join('')}</tbody></table>
-  ${host?`<div class="row"><button class="btn gold" data-st="1" ${ps.length<2?'disabled':''}>เริ่มเกมพร้อมกัน</button></div>${ps.length<2?'<p class="note">รอเพื่อนเข้าห้องอย่างน้อย 1 คน</p>':''}`:'<p class="note">รอเจ้าของห้องกดเริ่มเกม</p>'}<div class="row"><button class="btn plain" data-lv="1">ออกจากห้อง</button></div>`,{lock:true});
-  const m=$('#modal');m.querySelector('[data-lv]').onclick=()=>{clearInterval(lobbyT);closeModal();};const sb=m.querySelector('[data-st]');if(sb)sb.onclick=async()=>{sb.disabled=true;st.meta.status='playing';st.meta.startAt=Date.now();await net.meta(code,st.meta);clearInterval(lobbyT);mpEnter(st,code,id,me);};};
+  ${host?`<div class="row"><button class="btn gold" data-st="1" ${ps.length<2?'disabled':''}>เริ่มเกมพร้อมกัน</button></div>${ps.length<2?'<p class="note">รอเพื่อนเข้าห้องอย่างน้อย 1 คน</p>':''}`:'<p class="note">รอเจ้าของห้องกดเริ่มเกม</p>'}<div class="row">${host?'<button class="btn red" data-cl="1">ปิดห้อง</button>':''}<button class="btn plain" data-lv="1">ออกจากห้อง</button></div>`,{lock:true});
+  const m=$('#modal');m.querySelector('[data-lv]').onclick=()=>{clearInterval(lobbyT);closeModal();};const cb=m.querySelector('[data-cl]');if(cb)cb.onclick=async()=>{clearInterval(lobbyT);try{await net.close(code);closeModal();toast('ปิดห้องแล้ว');}catch(e){toast('ปิดห้องไม่สำเร็จ ลองใหม่อีกครั้ง');lobbyT=setInterval(tick,2500);}};const sb=m.querySelector('[data-st]');if(sb)sb.onclick=async()=>{sb.disabled=true;st.meta.status='playing';st.meta.startAt=Date.now();await net.meta(code,st.meta);clearInterval(lobbyT);mpEnter(st,code,id,me);};};
  tick();lobbyT=setInterval(tick,2500);}
 function mpEnter(st,code,id,me){closeModal();const sc='MP'+code;const local=store.get(KEY(sc));
  if(local){try{applySave(sc,local);}catch(e){S=null;}}
- if(!S||!S.mp||S.mp.room!==code){S=fresh(sc);S.owner={gender:me.gender||'m',name:me.name||'ผู้เล่น'};S.shopName=me.shop||'ร้านของฉัน';S.mp={room:code,id,rule:st.meta.rule,dayLen:st.meta.dayLen||60,ev:0,hand:[]};S.mpDays={};}
+ if(!S||!S.mp||S.mp.room!==code||S.mp.startAt!==st.meta.startAt){S=fresh(sc);S.owner={gender:me.gender||'m',name:me.name||'ผู้เล่น'};S.shopName=me.shop||'ร้านของฉัน';S.mp={room:code,id,rule:st.meta.rule,dayLen:st.meta.dayLen||60,ev:0,hand:[],startAt:st.meta.startAt};S.mpDays={};}
  startPlay(true);mpBanner(ruleText(S.mp.rule));mpStartPoll();}
 
 /* ---------- สำรับ VS: เพิ่มการ์ดใหม่ที่ตารางนี้ ---------- */
@@ -171,8 +173,9 @@ let mpTimer=0,mpLast={},mpFail=0,mpBusy=false;
 function mpStartPoll(){clearInterval(mpTimer);mpPoll();mpTimer=setInterval(mpPoll,3000);}
 function mpDayOver(){const r=S.mp.rule;return r.type==='years'&&S.day>r.years*YEAR_DAYS;}
 async function mpPoll(){if(!S||!S.mp||!G||screen!=='play'||mpBusy)return;mpBusy=true;const sm=S.mp;try{
+  const st=await net.get(sm.room);if(!S||S.mp!==sm)return;if(!st.meta){mpClosed();return;}
   await net.player(sm.room,sm.id,{name:S.owner.name,shop:S.shopName,gender:S.owner.gender,net:Math.round(netWorth()),rev:Math.round(S.stats.total),day:S.day,level:S.level,rep:+S.rep.toFixed(1),seen:Date.now(),done:sm.done||0,won:sm.won||0});
-  const st=await net.get(sm.room);if(!S||S.mp!==sm)return;mpLast=st;mpFail=0;
+  mpLast=st;mpFail=0;
   const ev=st.events||[];while(sm.ev<ev.length){const e=ev[sm.ev++];try{applyEvent(e);}catch(x){console.error(x);}}
   if(sm.rule.type==='money'&&!sm.won&&netWorth()>=sm.rule.goal){sm.won=Date.now();saveGame(true);const me=st.players[sm.id]=Object.assign(st.players[sm.id]||{},{won:sm.won,net:Math.round(netWorth())});await net.player(sm.room,sm.id,me);}
   mpCheckEnd();renderRail();
@@ -183,10 +186,15 @@ function mpCheckEnd(){const sm=S.mp;if(sm.over)return;const ps=Object.entries(mp
  if(sm.rule.type==='money')end=ps.some(([,p])=>p.won)||!!sm.won;
  else{const dn=ps.map(([,p])=>p.done).filter(Boolean);end=dn.length===ps.length||(dn.length>0&&Date.now()-Math.min(...dn)>MP_WAIT_END*1000);if(!end&&sm.waiting&&$('#modal').querySelector('h2')&&$('#modal').querySelector('h2').textContent==='คุณเล่นครบแล้ว')mpWait();}
  if(end)mpResult(ps);}
-function mpResult(ps){const sm=S.mp;sm.over=true;const rows=ps.map(([k,p])=>Object.assign({k},p));if(sm.rule.type==='money'){rows.sort((a,b)=>(a.won||9e15)-(b.won||9e15)||b.net-a.net);}else rows.sort((a,b)=>b.net-a.net);
- if(!rows.some(r=>r.k===sm.id))rows.push({k:sm.id,shop:S.shopName,name:S.owner.name,net:netWorth()});const win=rows[0],iWin=win.k===sm.id;if(iWin&&!S.won){S.won=S.day;checkTrophies();}saveGame(true);clearInterval(mpTimer);softPlay(iWin?'buy':'bad');
- openModal(`<div class="sheethead"><h2>${iWin?'คุณชนะ!':`${esc(win.shop)} ชนะ`}</h2></div><div class="say">${sprHTML('e_podium',100)}<p>${ruleText(sm.rule)}</p></div><table class="ledger"><tbody><tr><td><b>อันดับ ร้าน</b></td><td><b>เงินสุทธิ · ยอดขาย</b></td></tr>${rows.map((r,i)=>`<tr class="${r.k===sm.id?'hl':''}"><td>${i+1}. ${esc(r.shop)} (${esc(r.name)})</td><td>${fmt(r.net)} · ${fmt(r.rev||0)}</td></tr>`).join('')}</tbody></table><div class="row"><button class="btn gold" data-endm="1">กลับเมนูหลัก</button></div>`,{lock:true});
+function mpClosed(){if(S.mp.over)return;mpResult(Object.entries(mpLast.players||{}),true);}
+function mpResult(ps,closed){const sm=S.mp;sm.over=true;const rows=ps.map(([k,p])=>Object.assign({k},p));if(sm.rule.type==='money'&&!closed){rows.sort((a,b)=>(a.won||9e15)-(b.won||9e15)||b.net-a.net);}else rows.sort((a,b)=>b.net-a.net);
+ if(!rows.some(r=>r.k===sm.id))rows.push({k:sm.id,shop:S.shopName,name:S.owner.name,net:netWorth()});const win=rows[0],iWin=win.k===sm.id;if(iWin&&!closed&&!S.won){S.won=S.day;checkTrophies();}saveGame(true);clearInterval(mpTimer);softPlay(iWin?'buy':'bad');
+ openModal(`<div class="sheethead"><h2>${closed?`ห้องถูกปิด · ${iWin?'คุณ':esc(win.shop)}นำอยู่`:iWin?'คุณชนะ!':`${esc(win.shop)} ชนะ`}</h2></div><div class="say">${sprHTML('e_podium',100)}<p>${closed?'เจ้าของห้องปิดห้องก่อนจบเกม อันดับนี้ใช้ยอดล่าสุดที่แต่ละเครื่องส่งมา':ruleText(sm.rule)}</p></div><table class="ledger"><tbody><tr><td><b>อันดับ ร้าน</b></td><td><b>เงินสุทธิ · ยอดขาย</b></td></tr>${rows.map((r,i)=>`<tr class="${r.k===sm.id?'hl':''}"><td>${i+1}. ${esc(r.shop)} (${esc(r.name)})</td><td>${fmt(r.net)} · ${fmt(r.rev||0)}</td></tr>`).join('')}</tbody></table><div class="row"><button class="btn gold" data-endm="1">กลับเมนูหลัก</button></div>`,{lock:true});
  $('#modal [data-endm]').onclick=()=>{closeModal();showTitle();};}
 function mpTick(dt){if(!S.mp)return;if(G.mpT)Object.keys(G.mpT).forEach(k=>{if(G.mpT[k]>0)G.mpT[k]-=dt;});}
 function mpNewDay(){if(!S.mp||!S.mpDays)return;Object.keys(S.mpDays).forEach(k=>{if(S.mpDays[k]>0)S.mpDays[k]--;});}
 function mpLine(){if(!S.mp)return'';const ps=Object.entries(mpLast.players||{}).sort((a,b)=>b[1].net-a[1].net);const r=S.mp.rule;return `<div class="mpbox"><b>ห้อง ${S.mp.room}</b> · ${r.type==='years'?`ปี ${Math.ceil(S.day/YEAR_DAYS)}/${r.years}`:`เป้า ${fmt(r.goal)}`}${mpFail>2?' · <span class="neg">ขาดการเชื่อมต่อ</span>':''}${ps.map(([k,p],i)=>`<div class="statrow ${k===S.mp.id?'hlm':''}"><span>${i+1}. ${esc(p.shop)}</span><span>${fmt(p.net)}</span></div>`).join('')}${S.mpDays&&S.mpDays.ban>0?`<div class="penalty">แช่แข็งกำไรอีก ${S.mpDays.ban} วัน</div>`:''}</div>`;}
+
+function isHost(){return !!(S&&S.mp&&mpLast.meta&&mpLast.meta.host===S.mp.id);}
+function closeRoomDialog(){openModal(`<div class="sheethead"><h2>ปิดห้อง ${S.mp.room}</h2></div><p>เกมของทุกคนจะจบทันทีพร้อมสรุปอันดับตอนนี้ และห้องจะถูกลบ ย้อนกลับไม่ได้</p><p class="err" id="crErr"></p><div class="row"><button class="btn red" data-cr="1">ปิดห้องเลย</button><button class="btn plain" data-c="1">ยกเลิก</button></div>`,{lock:true});
+ const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;m.querySelector('[data-cr]').onclick=async e=>{e.target.disabled=true;try{await net.close(S.mp.room);closeModal();mpClosed();}catch(x){$('#crErr').textContent='ปิดห้องไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่';e.target.disabled=false;}};}

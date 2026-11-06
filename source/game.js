@@ -1,6 +1,6 @@
 'use strict';
 /* ===== Social Eyewear Game — ร้านแว่นตาจำลอง ===== */
-const GAME_VERSION='3.1';
+const GAME_VERSION='3.2';
 const W=1536,H=1024,SCALE=1,MW=900,MH=680;
 const $=s=>document.querySelector(s);
 const fmt=n=>'฿'+Math.round(n).toLocaleString('en-US');
@@ -744,11 +744,11 @@ function renderRail(){if(!S||!G||screen!=='play')return;
  if(railKey!==S.code||!r.firstChild){railKey=S.code;r.innerHTML=`<div class="card" id="rStat"></div>
  <button class="btn gold openbtn" id="rOpen" hidden></button>
  <button class="btn red openbtn handbtn" id="rAtk" hidden></button>
- <div class="railbtns"><button class="btn violet" id="rShop">ซื้อของ</button><button class="btn green" id="rStaff">จ้างคน</button><button class="btn" id="rTrain">อบรม</button><button class="btn gold" id="rHoya">สั่งสินค้า</button><button class="btn" id="rMap">แผนที่แข่ง</button><button class="btn" id="rAcct">บัญชี</button><button class="btn" id="rTro">โทรฟี่</button><button class="btn red" id="rHosp">โรงพยาบาล</button><button class="btn" id="rSave">เซฟเกม</button><button class="btn" id="rBank">ธนาคาร</button><button class="btn" id="rQuest">ภารกิจ</button><button class="btn gold" id="rFill" hidden>เติมสต็อก</button><button class="btn" id="rLay">จัดร้าน</button><button class="btn plain" id="rOpt">ตั้งค่า</button><button class="btn plain" id="rMenu">เมนูหลัก</button></div>
+ <div class="railbtns"><button class="btn violet" id="rShop">ซื้อของ</button><button class="btn green" id="rStaff">จ้างคน</button><button class="btn" id="rTrain">อบรม</button><button class="btn gold" id="rHoya">สั่งสินค้า</button><button class="btn" id="rMap">แผนที่แข่ง</button><button class="btn" id="rAcct">บัญชี</button><button class="btn" id="rTro">โทรฟี่</button><button class="btn red" id="rHosp">โรงพยาบาล</button><button class="btn" id="rSave">เซฟเกม</button><button class="btn" id="rBank">ธนาคาร</button><button class="btn" id="rQuest">ภารกิจ</button><button class="btn gold" id="rFill" hidden>เติมสต็อก</button><button class="btn" id="rLay">จัดร้าน</button><button class="btn plain" id="rOpt">ตั้งค่า</button><button class="btn red" id="rClose" hidden>ปิดห้อง</button><button class="btn plain" id="rMenu">เมนูหลัก</button></div>
  <div class="card" id="rStock"></div><div class="card feed" id="rFeed" aria-live="polite"></div><div class="card mini" id="rDay"></div><div class="card mini" id="rMp" hidden></div><div class="card mini" id="rCloud"></div><div class="mini verline">เวอร์ชัน ${GAME_VERSION}</div>`;
-  $('#rOpen').onclick=()=>{closeModal();openDay();};$('#rAtk').onclick=attackDialog;$('#rBank').onclick=()=>bankMonth(()=>{},true);$('#rQuest').onclick=questDialog;$('#rFill').onclick=fillAll;$('#rLay').onclick=arrangeMode;$('#rHosp').onclick=()=>hospitalDialog();$('#rTrain').onclick=trainDialog;$('#rMap').onclick=mapDialog;$('#rAcct').onclick=accountDialog;$('#rTro').onclick=trophyDialog;$('#rShop').onclick=shopDialog;$('#rStaff').onclick=staffDialog;$('#rHoya').onclick=()=>hoyaDialog();$('#rSave').onclick=()=>saveGame();
+  $('#rOpen').onclick=()=>{closeModal();openDay();};$('#rClose').onclick=closeRoomDialog;$('#rAtk').onclick=attackDialog;$('#rBank').onclick=()=>bankMonth(()=>{},true);$('#rQuest').onclick=questDialog;$('#rFill').onclick=fillAll;$('#rLay').onclick=arrangeMode;$('#rHosp').onclick=()=>hospitalDialog();$('#rTrain').onclick=trainDialog;$('#rMap').onclick=mapDialog;$('#rAcct').onclick=accountDialog;$('#rTro').onclick=trophyDialog;$('#rShop').onclick=shopDialog;$('#rStaff').onclick=staffDialog;$('#rHoya').onclick=()=>hoyaDialog();$('#rSave').onclick=()=>saveGame();
   $('#rOpt').onclick=optionDialog;$('#rMenu').onclick=()=>{saveGame(true);railKey='';showTitle();};}
- $('#rFill').hidden=!own('autostock');{const ra=$('#rAtk');ra.hidden=!S.mp;if(S.mp){const t=`การ์ดในมือ ${hand().length}/${HAND_MAX}`;if(ra.textContent!==t)ra.textContent=t;}}
+ $('#rFill').hidden=!own('autostock');$('#rClose').hidden=!isHost();{const ra=$('#rAtk');ra.hidden=!S.mp;if(S.mp){const t=`การ์ดในมือ ${hand().length}/${HAND_MAX}`;if(ra.textContent!==t)ra.textContent=t;}}
  const ob=$('#rOpen');const canOpen=!!G.summary&&!G.mobile&&!G.event;ob.hidden=!canOpen;if(canOpen)ob.textContent=`เปิดร้านวันที่ ${dayInMonth(S.day)}/${MONTH_DAYS}`;
  const rm=$('#rMp');rm.hidden=!S.mp;if(S.mp)setHTML(rm,mpLine());
  const ht=hintText(),he=$('#hint');if(he.textContent!==ht)he.textContent=ht;

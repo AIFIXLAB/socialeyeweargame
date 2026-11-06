@@ -27,8 +27,10 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ ok: false });
     if (b.a === 'create') {
       const [r] = await pipe([['SET', k.m, ok(b.meta), 'NX', 'EX', TTL]]);
+      if (r) await pipe([['DEL', k.p, k.e]]);
       return res.status(200).json({ ok: !!r, taken: !r });
     }
+    if (b.a === 'close') { await pipe([['DEL', k.m, k.p, k.e]]); return res.status(200).json({ ok: true }); }
     if (b.a === 'meta') { await pipe([['SET', k.m, ok(b.meta), 'EX', TTL]]); return res.status(200).json({ ok: true }); }
     if (b.a === 'player') {
       if (!/^[a-z0-9]{4,16}$/.test(String(b.id))) return res.status(400).json({ ok: false });

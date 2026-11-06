@@ -125,7 +125,7 @@ function eventAdd(total,score){const e=G.event;if(!e)return;e.me+=e.mode==='fast
 
 /* ---------- ซื้อกรอบ ---------- */
 function frameStock(cat){return S.frames[cat]||0;}
-function buyFrames(cat){const f=FRAME_CATS[cat],c=f.cost*5;if(S.money<c)return false;spend('frameCost',c);S.frames[cat]=frameStock(cat)+5;softPlay('buy');log(`สั่ง${f.name} 5 ชิ้น`);return true;}
+function buyFrames(cat,q=5){const f=FRAME_CATS[cat],c=f.cost*q;if(S.money<c)return false;spend('frameCost',c);S.frames[cat]=frameStock(cat)+q;softPlay('buy');log(`สั่ง${f.name} ${q} ชิ้น`);return true;}
 
 /* ---------- ลูกค้าพิเศษ: เพิ่มประเภทใหม่ที่ตารางนี้ ---------- */
 const CTYPE={
@@ -157,7 +157,7 @@ const CTPOW=['-1.00','-2.00','-3.00','-4.00','-5.00'];
 function ctOwned(k){return own('ctcorner')&&(CT[k].free||own('ct_'+k));}
 function ctList(){return Object.keys(CT).filter(ctOwned);}
 function ctStock(k,p){return S.ct[k+'|'+p]||0;}
-function ctBuy(k,p){const c=CT[k].cost*5;if(S.money<c)return false;spend('lensBuy',c);S.ct[k+'|'+p]=ctStock(k,p)+5;softPlay('buy');return true;}
+function ctBuy(k,p,q=5){const c=CT[k].cost*q;if(S.money<c)return false;spend('lensBuy',c);S.ct[k+'|'+p]=ctStock(k,p)+q;softPlay('buy');return true;}
 function ctWorkerPick(c,acc){const types=ctList().filter(k=>CT[k].type===c.ctType);const have=types.filter(k=>CTPOW.some(p=>ctStock(k,p)>0));if(!have.length)return null;
  const k=have.find(x=>ctStock(x,c.ctPow)>0);if(k&&Math.random()<=acc)return[k,c.ctPow];const a=have[0];const near=CTPOW.filter(p=>ctStock(a,p)>0&&(p!==c.ctPow||!k));return near.length?[a,near[0]]:[a,c.ctPow];}
 function contactDialog(c){const rows=ctList().map(k=>{const d=CT[k];return `<div class="ctrow">${sprHTML(d.spr,62)}<span class="tx"><b>${d.brand}</b><small>${CTTYPE[d.type]} · ${fmt(d.price*repMul())}</small></span><span class="ctpow">${CTPOW.map(p=>{const n=ctStock(k,p);return n?`<button class="tab" data-ct="${k}|${p}">${p}<small> ${n}</small></button>`:`<button class="tab empty" data-buy="${k}|${p}" ${S.money<d.cost*5?'disabled':''} title="สั่ง 5 กล่อง">${p}<small> สั่ง</small></button>`;}).join('')}</span></div>`;}).join('');

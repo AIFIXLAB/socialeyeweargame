@@ -1,6 +1,6 @@
 'use strict';
 /* ===== Social Eyewear Game — ร้านแว่นตาจำลอง ===== */
-const GAME_VERSION='2.0';
+const GAME_VERSION='2.1';
 const W=1536,H=1024,SCALE=1,MW=900,MH=680;
 const $=s=>document.querySelector(s);
 const fmt=n=>'฿'+Math.round(n).toLocaleString('en-US');
@@ -19,6 +19,7 @@ const LENSES={
  myo:{name:'MiYOSMART',desc:'ชะลอสายตาสั้นในเด็ก',cost:4200,price:9500,fee:15000,pack:3,tag:'เด็ก',need:'phoro'},
  prog:{name:'Hoyalux iD',desc:'โปรเกรสซีฟ มองใกล้-ไกลในเลนส์เดียว',cost:5500,price:13500,fee:22000,pack:3,tag:'สูงวัย',need:'slit'}
 };
+const EXAM_FEE=1500;
 const LENS_Q={
  hilux:['ขอแว่นใส่ทั่วไปครับ งบไม่เยอะ เอาแบบคุ้มๆ','เพิ่งเริ่มใส่แว่นครั้งแรก เอาเลนส์ธรรมดาที่ราคาย่อมเยาพอ'],
  blue:['นั่งหน้าคอมทั้งวัน ตาล้ามมากเลย มีเลนส์ช่วยไหม','เล่นเกมดึกทุกคืน ปวดตาจากจอ ควรใช้เลนส์อะไรดี'],
@@ -37,12 +38,13 @@ const FRAME_CATS={
  fun:{name:'ดีไซเนอร์คอลเลกชัน',wish:'ทรงแปลกไม่ซ้ำใคร ของดีไซเนอร์',price:5200,cost:2000,sprites:['fr1_11','fr2_11','fr4_7','fr3_3','fr4_2','fr5_3','fr4_1','fr3_2'],shelf:'disp4'}
 };
 /* item: cat, id, name, desc, price, sprite, effect text */
+const FILL_COST=100000;
 const SHOP=[
- {id:'auto',cat:'exam',name:'Auto Refractor',spr:'auto',price:18000,fx:'วัดเร็วขึ้น 20% · ค่าบริการ +฿150',fee:150,lv:1},
- {id:'phoro',cat:'exam',name:'ชุด Phoropter',spr:'phoro',price:38000,fx:'ค่าบริการ +฿250 · ลูกค้าครอบครัวเริ่มมา',fee:250,lv:2},
- {id:'slit',cat:'exam',name:'Slit Lamp',spr:'slit',price:62000,fx:'ค่าบริการ +฿350 · ผู้สูงอายุเริ่มมา',fee:350,lv:3},
- {id:'fundus',cat:'exam',name:'กล้องถ่ายจอตา',spr:'fundus',price:110000,fx:'ตรวจจอตาได้ ค่าบริการ +฿600',fee:600,lv:4},
- {id:'oct',cat:'exam',name:'เครื่อง OCT',spr:'oct',price:190000,fx:'ตรวจเชิงลึก ค่าบริการ +฿1,000',fee:1000,lv:5},
+ {id:'auto',cat:'exam',name:'Auto Refractor',spr:'auto',price:18000,fx:'วัดเร็วขึ้น 20%',lv:1},
+ {id:'phoro',cat:'exam',name:'ชุด Phoropter',spr:'phoro',price:38000,fx:'วัดเร็วขึ้น 8% · ลูกค้าครอบครัวเริ่มมา',lv:2},
+ {id:'slit',cat:'exam',name:'Slit Lamp',spr:'slit',price:62000,fx:'ผู้สูงอายุเริ่มมา · ขายโปรเกรสซีฟได้',lv:3},
+ {id:'fundus',cat:'exam',name:'กล้องถ่ายจอตา',spr:'fundus',price:110000,fx:'วัดเร็วขึ้น 10%',lv:4},
+ {id:'oct',cat:'exam',name:'เครื่อง OCT',spr:'oct',price:190000,fx:'วัดเร็วขึ้นอีก 10%',lv:5},
  {id:'chair2',cat:'exam',name:'ห้องตรวจห้องที่ 2',spr:'chair',price:32000,fx:'เปิดห้องตรวจ 2 วัดพร้อมกันได้ 2 คน'},
  {id:'edger',cat:'lab',name:'เครื่องฝนเลนส์อัตโนมัติ',spr:'edger',price:16000,fx:'ประกอบแว่นเร็วขึ้น 30%'},
  {id:'lmeter',cat:'lab',name:'Lens Meter',spr:'lmeter',price:14000,fx:'ความแม่นยำสูง ทิปเพิ่ม 5%'},
@@ -68,6 +70,7 @@ const SHOP=[
  {id:'ct_menicon',cat:'contact',name:'ตู้ Menicon',spr:'ct_menicon',price:13000,fx:'ขายคอนแทครายเดือนราคาสูงขึ้น',req:'ctcorner'},
  {id:'ct_seed',cat:'contact',name:'ตู้ SEED',spr:'ct_seed',price:12000,fx:'ขายคอนแทคสีแฟชั่น',req:'ctcorner'},
  {id:'ct_cooper',cat:'contact',name:'ตู้ CooperVision',spr:'ct_cooper',price:16000,fx:'ขายคอนแทคสำหรับสายตาเอียง',req:'ctcorner'},
+ {id:'autostock',cat:'shop',name:'ระบบเติมสต็อกปุ่มเดียว',spr:'ct_box',price:FILL_COST,fx:'กดปุ่มเดียวเติมทุกสินค้า ตั้งจำนวนแต่ละชิ้นได้'},
  {id:'van',cat:'shop',name:'สัญญาจัดส่งด่วน Hoya',spr:'ic_gift',price:12000,fx:'เลนส์ส่งถึงร้านเร็วขึ้นครึ่งหนึ่ง'}
 ];
 const SHOPBY=Object.fromEntries(SHOP.map(s=>[s.id,s]));
@@ -125,7 +128,7 @@ let dragging=null;
 let screen='title';
 let hover=null;
 
-function fresh(code){return{v:9,owner:{gender:'m',name:'เจ้าของร้าน'},shopName:'Social Eyewear',bank:{dep:0,loan:0},stock:null,place:{},names:{},appts:[],ct:{},penalty:0,layout:{},frames:{basic:12},rel:{},quests:{},lastRandom:0,minigame:true,kit:{},hosp:{done:{},last:{},best:{},called:{},reports:[],sched:null},rev:0,xp:0,level:1,ledger:blankLedger(),history:[],daily:[],accComm:0,dayStart:0,dayHits:0,staffData:{},areas:1,branches:[],trophies:{},ev:{beat:{},last:{},wins:0,bronze:0,silver:0,gold:0},stats:{exams:0,veryHappy:0,total:0,sales:0,lensSold:0,frameSold:0,premium:0,blue:0,kinds:{},fashion:0,sun:0,sport:0,computer:0,kids:0,seniors:0,families:0,vip:0,topItem:0,satSum:0,satN:0,dayMax:0,targetHit:0,streak:0,bestStreak:0,profitKing:0,events:0},code,money:15000,rep:3,day:1,dayT:0,owned:{},lens:{hilux:{listed:true,stock:8}},staff:[],floor:0,floors:{0:true},served:0,earned:0,sound:true};}
+function fresh(code){return{v:10,fill:{},owner:{gender:'m',name:'เจ้าของร้าน'},shopName:'Social Eyewear',bank:{dep:0,loan:0},stock:null,place:{},names:{},appts:[],ct:{},penalty:0,layout:{},frames:{basic:12},rel:{},quests:{},lastRandom:0,minigame:true,kit:{},hosp:{done:{},last:{},best:{},called:{},reports:[],sched:null},rev:0,xp:0,level:1,ledger:blankLedger(),history:[],daily:[],accComm:0,dayStart:0,dayHits:0,staffData:{},areas:1,branches:[],trophies:{},ev:{beat:{},last:{},wins:0,bronze:0,silver:0,gold:0},stats:{exams:0,veryHappy:0,total:0,sales:0,lensSold:0,frameSold:0,premium:0,blue:0,kinds:{},fashion:0,sun:0,sport:0,computer:0,kids:0,seniors:0,families:0,vip:0,topItem:0,satSum:0,satN:0,dayMax:0,targetHit:0,streak:0,bestStreak:0,profitKing:0,events:0},code,money:15000,rep:3,day:1,dayT:0,owned:{},lens:{hilux:{listed:true,stock:8}},staff:[],floor:0,floors:{0:true},served:0,earned:0,sound:true};}
 function newLive(){return{cust:[],jobs:[],player:{key:'od1',x:SPOT.home.x,y:SPOT.home.y,dir:'f',flip:false,tasks:[],task:null,prog:0,t:0},workers:[],deliveries:[],fx:[],spawn:3,seq:0,event:null,chairs:[null,null],queue:[],today:blankDay(),closing:false,summary:false,feed:[],seen:{},saveT:0};}
 function blankDay(){return{rev:0,lens:0,frame:0,exam:0,tip:0,cost:0,served:0,left:0,buy:0};}
 function own(id){return !!(S&&S.owned[id]);}
@@ -133,7 +136,7 @@ function seatCount(){return 3+(own('seat1')?3:0)+(own('seat2')?2:0);}
 function chairCount(){return own('chair2')?2:1;}
 function moveSpeed(){return 200*(1+(own('shoe1')?.25:0)+(own('shoe2')?.25:0));}
 function patMul(){let m=1;if(own('water'))m*=1.1;if(own('plant'))m*=1.05;m*=1+Object.keys(S.floors).length*.01;return m;}
-function examTime(sp){let t=7*((G&&G.dayFx&&G.dayFx.exam)||1);if(own('auto'))t*=.8;if(own('phoro'))t*=.92;return t/(sp||1);}
+function examTime(sp){let t=7*((G&&G.dayFx&&G.dayFx.exam)||1);if(own('auto'))t*=.8;if(own('phoro'))t*=.92;if(own('fundus'))t*=.9;if(own('oct'))t*=.9;return t/(sp||1);}
 function labTime(sp){let t=8;if(own('edger'))t*=.7;if(own('uv'))t*=.75;return t/(sp||1);}
 function cashTime(sp){let t=1.6;if(own('cnt2'))t*=.6;if(own('cnt3'))t*=.5;return t/(sp||1);}
 function tipBonus(){return (own('lmeter')?.05:0)+(own('ultra')?.05:0)+(own('mirror')?.05:0)+(own('cnt3')?.05:0);}
@@ -210,7 +213,7 @@ function importSave(txt){const o=JSON.parse(decodeURIComponent(escape(atob(txt.t
 let toastT=0;
 function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2400);}
 function log(m,c){if(!G)return;G.feed.unshift({m,c});G.feed=G.feed.slice(0,4);renderRail(true);}
-function openModal(html,opts){const m=$('#modal');m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;m.hidden=false;m.firstChild.classList.toggle('wide',!!(opts&&opts.wide));m._o=opts||{};if(!m._p){paused++;m._p=true;}m.querySelector('.sheet').scrollTop=0;}
+function openModal(html,opts){const m=$('#modal');const oldT=!m.hidden&&m.querySelector('h2')?m.querySelector('h2').textContent:null,oldS=!m.hidden&&m.firstChild?m.firstChild.scrollTop:0;m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;m.hidden=false;m.firstChild.classList.toggle('wide',!!(opts&&opts.wide));m._o=opts||{};if(!m._p){paused++;m._p=true;}const nh=m.querySelector('h2');m.querySelector('.sheet').scrollTop=nh&&nh.textContent===oldT?oldS:0;}
 function closeModal(){const m=$('#modal');m.hidden=true;m.innerHTML='';if(m._p){paused=Math.max(0,paused-1);m._p=false;}const f=m._o&&m._o.onClose;m._o={};if(f)f();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden&&!$('#modal')._o.lock)closeModal();});
 
@@ -356,7 +359,7 @@ function onCustomerClick(c){
 function onLabClick(){const j=G.jobs.find(j=>!j.owner);if(!j){toast('ยังไม่มีงานที่โต๊ะช่าง');return;}j.owner='player';pushTask({kind:'lab',j,x:SPOT.lab.x,y:SPOT.lab.y});}
 
 function bill(c,kind,label,amount,stat){if(c.type)amount*=CTYPE[c.type].mul;c.bill.push({label,amount,stat});G.today[stat]=(G.today[stat]||0)+amount;}
-function completeExam(c,who){S.stats.exams++;staffXp(who);const base=250;let fee=base*(1-(S.penalty||0)/100);SHOP.forEach(s=>{if(s.cat==='exam'&&s.lv&&own(s.id)&&s.lv<=Math.max(1,c.examLv))fee+=s.fee;});
+function completeExam(c,who){S.stats.exams++;staffXp(who);const fee=EXAM_FEE*(1-(S.penalty||0)/100);
  bill(c,'exam','ค่าตรวจวัดสายตา',fee,'exam');if(who&&who.key)workerComm(c,who,fee*COMM.od);G.fx.push({x:c.x,y:c.y-100,t:1.2,text:'ค่าตรวจ '+fmt(fee),col:'#2f6fe0'});
  if(c.chair!=null){G.chairs[c.chair]=null;c.chair=null;}
  sendSeat(c);c.then='idle';c.si++;c.owner=null;c.pat=Math.min(100,c.pat+15);
@@ -630,26 +633,29 @@ function frameDialog(c){
  m.querySelector('[data-later]').onclick=closeModal;
 }
 function hoyaDialog(focus){
- const cards=Object.keys(LENSES).map(id=>{const l=LENSES[id],s=lensState(id),ok=lensAvailable(id);const cost=l.cost*l.pack;
+ const cards=Object.keys(LENSES).map(id=>{const l=LENSES[id],s=lensState(id),ok=lensAvailable(id);const cost=l.cost*orderQty;
   const need=!ok?`<span class="tag no">${l.course&&!courseDone(l.course)?'ต้องผ่าน '+COURSE[l.course].name:'ต้องมี '+SHOPBY[l.need].name}</span>`:'';
   const pend=G.deliveries.filter(d=>d.id===id).reduce((a,d)=>a+d.qty,0);
-  const act=!ok?'':!s.listed?`<button class="btn gold" data-list="${id}" ${S.money<l.fee+cost?'disabled':''}>เปิดรายการ + สั่ง ${l.pack} คู่ ${fmt(l.fee+cost)}</button>`
-   :`<button class="btn" data-order="${id}" ${S.money<cost?'disabled':''}>สั่ง ${l.pack} คู่ ${fmt(cost)}</button>`;
+  const act=!ok?'':!s.listed?`<button class="btn gold" data-list="${id}" ${S.money<l.fee+cost?'disabled':''}>เปิดรายการ + สั่ง ${orderQty} คู่ ${fmt(l.fee+cost)}</button>`
+   :`<button class="btn" data-order="${id}" ${S.money<cost?'disabled':''}>สั่ง ${orderQty} คู่ ${fmt(cost)}</button>`;
   return `<div class="item col ${focus===id?'owned':''} ${ok?'':'off'}"><span class="tx"><b>${l.name}</b><small>${l.desc}</small><small>${lensBrand(id)} · ทุน ${fmt(l.cost)}/คู่ · ขาย ${fmt(lensPrice(id))}</small></span>
   <span class="row"><span class="tag">สต็อก ${s.stock}${pend?` · ส่ง ${pend}`:''}</span>${need}</span>${act}</div>`;}).join('');
- openModal(`<div class="sheethead"><h2>สั่งสินค้า</h2><button class="btn plain" data-c="1">วางสาย</button></div>
+ openModal(`<div class="sheethead"><h2>สั่งสินค้า</h2><button class="btn plain" data-c="1">ปิด</button></div>
  <p class="note">เงินในร้าน ${fmt(S.money)} · ส่งถึงร้านใน ${deliverTime()} วินาทีเกม · ราคาในเกมสมมติขึ้นเพื่อการเล่น ไม่ได้เกี่ยวข้องกับบริษัทเลนส์จริง</p>
- <h3>เลนส์</h3><div class="grid">${cards}</div>${ctList().length?`<h3>คอนแทคเลนส์ (สั่งครั้งละ 5 กล่องต่อค่าสายตา)</h3><div class="ctlist">${ctList().map(k=>`<div class="ctrow">${sprHTML(CT[k].spr,50)}<span class="tx"><b>${CT[k].brand}</b><small>${CTTYPE[CT[k].type]} · ทุน ${fmt(CT[k].cost)}/กล่อง</small></span><span class="ctpow">${CTPOW.map(p=>`<button class="tab" data-ctb="${k}|${p}" ${S.money<CT[k].cost*5?'disabled':''}>${p}<small> มี ${ctStock(k,p)}</small></button>`).join('')}</span></div>`).join('')}</div>`:''}<h3>กรอบแว่น</h3><div class="grid">${Object.keys(FRAME_CATS).filter(frameUnlocked).map(k=>{const f=FRAME_CATS[k];return `<div class="item">${sprHTML(f.sprites[0],26)}<span class="tx"><b>${f.name}</b><small>ทุน ${fmt(f.cost)} · ขาย ${fmt(f.price)} · มี ${frameStock(k)} ชิ้น</small></span><button class="btn" data-buyf="${k}" ${S.money<f.cost*5?'disabled':''}>สั่ง 5 ${fmt(f.cost*5)}</button></div>`;}).join('')}</div>`);
+ ${fillPanel()}${qtyBar()}<h3>เลนส์</h3><div class="grid">${cards}</div>${ctList().length?`<h3>คอนแทคเลนส์ (กดค่าสายตาเพื่อสั่ง)</h3><div class="ctlist">${ctList().map(k=>`<div class="ctrow">${sprHTML(CT[k].spr,50)}<span class="tx"><b>${CT[k].brand}</b><small>${CTTYPE[CT[k].type]} · ทุน ${fmt(CT[k].cost)}/กล่อง</small></span><span class="ctpow">${CTPOW.map(p=>`<button class="tab" data-ctb="${k}|${p}" ${S.money<CT[k].cost*orderQty?'disabled':''}>${p}<small> มี ${ctStock(k,p)}</small></button>`).join('')}</span></div>`).join('')}</div>`:''}<h3>กรอบแว่น</h3><div class="grid">${Object.keys(FRAME_CATS).filter(frameUnlocked).map(k=>{const f=FRAME_CATS[k];return `<div class="item">${sprHTML(f.sprites[0],26)}<span class="tx"><b>${f.name}</b><small>ทุน ${fmt(f.cost)} · ขาย ${fmt(f.price)} · มี ${frameStock(k)} ชิ้น</small></span><button class="btn" data-buyf="${k}" ${S.money<f.cost*orderQty?'disabled':''}>สั่ง ${orderQty} ${fmt(f.cost*orderQty)}</button></div>`;}).join('')}</div>`);
  const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;
- m.querySelectorAll('[data-ctb]').forEach(b=>b.onclick=()=>{const[k,q]=b.dataset.ctb.split('|');ctBuy(k,q);hoyaDialog();renderRail();});
- m.querySelectorAll('[data-buyf]').forEach(b=>b.onclick=()=>{buyFrames(b.dataset.buyf);hoyaDialog();renderRail();});
+ m.querySelectorAll('[data-ctb]').forEach(b=>b.onclick=()=>{const[k,q]=b.dataset.ctb.split('|');ctBuy(k,q,orderQty);hoyaDialog();renderRail();});
+ m.querySelectorAll('[data-buyf]').forEach(b=>b.onclick=()=>{buyFrames(b.dataset.buyf,orderQty);hoyaDialog();renderRail();});
+ m.querySelectorAll('[data-qty]').forEach(b=>b.onclick=()=>{orderQty=+b.dataset.qty;hoyaDialog(focus);});
+ const qi=$('#qtyIn');qi.onchange=()=>{orderQty=clamp(Math.floor(+qi.value)||1,1,999);hoyaDialog(focus);};
+ const fa=m.querySelector('[data-fillall]');if(fa)fa.onclick=()=>{fillAll();hoyaDialog(focus);};const fs=m.querySelector('[data-fillset]');if(fs)fs.onclick=fillDialog;
  m.querySelectorAll('[data-list]').forEach(b=>b.onclick=()=>order(b.dataset.list,true));
  m.querySelectorAll('[data-order]').forEach(b=>b.onclick=()=>order(b.dataset.order,false));
 }
 function deliverTime(){return (own('van')?7:14)*((G&&G.dayFx&&G.dayFx.deliver)||1);}
-function order(id,list){const l=LENSES[id],s=lensState(id),cost=l.cost*l.pack+(list?l.fee:0);if(S.money<cost)return;
- spend('lensBuy',cost);G.today.buy+=cost;if(list)s.listed=true;G.deliveries.push({id,qty:l.pack,t:deliverTime()});beep('buy');
- log(`สั่ง ${l.name} ${l.pack} คู่ กับ ${lensBrand(id)}`);hoyaDialog(id);renderRail();}
+function order(id,list){const l=LENSES[id],s=lensState(id),cost=l.cost*orderQty+(list?l.fee:0);if(S.money<cost)return;
+ spend('lensBuy',cost);G.today.buy+=cost;if(list)s.listed=true;G.deliveries.push({id,qty:orderQty,t:deliverTime()});beep('buy');
+ log(`สั่ง ${l.name} ${orderQty} คู่ กับ ${lensBrand(id)}`);hoyaDialog(id);renderRail();}
 
 let shopTab='exam';
 function shopDialog(){
@@ -722,10 +728,11 @@ function renderRail(){if(!S||!G||screen!=='play')return;
  const r=$('#rail');
  if(railKey!==S.code||!r.firstChild){railKey=S.code;r.innerHTML=`<div class="card" id="rStat"></div>
  <button class="btn gold openbtn" id="rOpen" hidden></button>
- <div class="railbtns"><button class="btn violet" id="rShop">ซื้อของ</button><button class="btn green" id="rStaff">จ้างคน</button><button class="btn" id="rTrain">อบรม</button><button class="btn gold" id="rHoya">สั่งสินค้า</button><button class="btn" id="rMap">แผนที่แข่ง</button><button class="btn" id="rAcct">บัญชี</button><button class="btn" id="rTro">โทรฟี่</button><button class="btn red" id="rHosp">โรงพยาบาล</button><button class="btn" id="rSave">เซฟเกม</button><button class="btn" id="rQuest">ภารกิจ</button><button class="btn" id="rBank">ธนาคาร</button><button class="btn" id="rSt">หุ้นร้าน</button><button class="btn" id="rLay">จัดร้าน</button><button class="btn plain" id="rOpt">ตั้งค่า</button><button class="btn plain" id="rMenu">เมนูหลัก</button></div>
+ <div class="railbtns"><button class="btn violet" id="rShop">ซื้อของ</button><button class="btn green" id="rStaff">จ้างคน</button><button class="btn" id="rTrain">อบรม</button><button class="btn gold" id="rHoya">สั่งสินค้า</button><button class="btn" id="rMap">แผนที่แข่ง</button><button class="btn" id="rAcct">บัญชี</button><button class="btn" id="rTro">โทรฟี่</button><button class="btn red" id="rHosp">โรงพยาบาล</button><button class="btn" id="rSave">เซฟเกม</button><button class="btn" id="rQuest">ภารกิจ</button><button class="btn gold" id="rFill" hidden>เติมสต็อก</button><button class="btn" id="rBank">ธนาคาร</button><button class="btn" id="rSt">หุ้นร้าน</button><button class="btn" id="rLay">จัดร้าน</button><button class="btn plain" id="rOpt">ตั้งค่า</button><button class="btn plain" id="rMenu">เมนูหลัก</button></div>
  <div class="card" id="rStock"></div><div class="card feed" id="rFeed" aria-live="polite"></div><div class="card mini" id="rDay"></div><div class="card mini" id="rCloud"></div><div class="mini verline">เวอร์ชัน ${GAME_VERSION}</div>`;
-  $('#rOpen').onclick=()=>{closeModal();openDay();};$('#rQuest').onclick=questDialog;$('#rBank').onclick=bankDialog;$('#rSt').onclick=stockDialog;$('#rLay').onclick=arrangeMode;$('#rHosp').onclick=()=>hospitalDialog();$('#rTrain').onclick=trainDialog;$('#rMap').onclick=mapDialog;$('#rAcct').onclick=accountDialog;$('#rTro').onclick=trophyDialog;$('#rShop').onclick=shopDialog;$('#rStaff').onclick=staffDialog;$('#rHoya').onclick=()=>hoyaDialog();$('#rSave').onclick=()=>saveGame();
+  $('#rOpen').onclick=()=>{closeModal();openDay();};$('#rQuest').onclick=questDialog;$('#rFill').onclick=fillAll;$('#rBank').onclick=bankDialog;$('#rSt').onclick=stockDialog;$('#rLay').onclick=arrangeMode;$('#rHosp').onclick=()=>hospitalDialog();$('#rTrain').onclick=trainDialog;$('#rMap').onclick=mapDialog;$('#rAcct').onclick=accountDialog;$('#rTro').onclick=trophyDialog;$('#rShop').onclick=shopDialog;$('#rStaff').onclick=staffDialog;$('#rHoya').onclick=()=>hoyaDialog();$('#rSave').onclick=()=>saveGame();
   $('#rOpt').onclick=optionDialog;$('#rMenu').onclick=()=>{saveGame(true);railKey='';showTitle();};}
+ $('#rFill').hidden=!own('autostock');
  const ob=$('#rOpen');const canOpen=!!G.summary&&!G.mobile&&!G.event;ob.hidden=!canOpen;if(canOpen)ob.textContent=`เปิดร้านวันที่ ${dayInMonth(S.day)}/${MONTH_DAYS}`;
  $('#hint').textContent=hintText();
  setHTML($('#rStat'),`<div class="statrow"><span class="money">${fmt(S.money)}</span><span class="stars" title="ชื่อเสียงร้าน ${S.rep.toFixed(1)}/5">${stars()}</span></div>
@@ -765,4 +772,4 @@ async function boot(){ATLAS=window.ATLAS_DATA;
  if(document.fonts&&document.fonts.load)document.fonts.load('500 14px Mitr').catch(()=>{});
  cloud.init();showTitle();requestAnimationFrame(frame);}
 boot();
-window.__g={startEvent,bankDialog,stockDialog,fairPrice,stockTick,stockTrade,creditLimit,financeMonth,hireDialog,setupDialog,arrangeMode,endArrange,arrangeClick,eqMap,watchdog,mobileClick,renameDialog,staffNameOf,makeAppt,processAppts,showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};
+window.__g={completeExam,fillAll,fillSummary,hospCool,startEvent,bankDialog,stockDialog,fairPrice,stockTick,stockTrade,creditLimit,financeMonth,hireDialog,setupDialog,arrangeMode,endArrange,arrangeClick,eqMap,watchdog,mobileClick,renameDialog,staffNameOf,makeAppt,processAppts,showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};

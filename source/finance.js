@@ -39,10 +39,9 @@ function stockTrade(sell,q){const st=S.stock;q=Math.min(q,sell?st.mine:st.pool);
  st.price=Math.max(1,st.price);st.hist.push(st.price);softPlay('coin');saveGame(true);}
 function stockDialog(){const st=S.stock;if(!st||!st.listed){const ok=S.level>=IPO_LV&&S.money>=IPO_FEE;const p=fairPrice();
   openModal(`<div class="sheethead"><h2>เปิดหุ้นร้าน</h2><button class="btn plain" data-c="1">ปิด</button></div><p>นำ${esc(S.shopName)}เข้าตลาด มีบอทนักลงทุนมาซื้อขาย ราคาหุ้นขึ้นลงตามกำไร เงินทุน ชื่อเสียง และแรงซื้อขาย</p>
-  <table class="ledger"><tbody><tr><td>ค่าเปิดระบบ</td><td>${fmt(IPO_FEE)}</td></tr><tr><td>ต้องมีเลเวลร้าน</td><td>${IPO_LV} (ตอนนี้ ${S.level})</td></tr><tr><td>จำนวนหุ้น</td><td>${ST_SHARES.toLocaleString('en-US')} หุ้น</td></tr><tr><td>ราคาเปิดโดยประมาณ</td><td>${fmt(p)}</td></tr><tr><td>คุณถือ</td><td>${(ST_SHARES*(1-ST_FLOAT)).toLocaleString('en-US')} หุ้น</td></tr><tr><td>กระจายให้นักลงทุนตอนเปิด</td><td>${(ST_SHARES*ST_FLOAT).toLocaleString('en-US')} หุ้น · คุณได้เงิน ${fmt(p*ST_SHARES*ST_FLOAT)}</td></tr></tbody></table>
+  <table class="ledger"><tbody><tr><td>ค่าเปิดระบบ</td><td>${fmt(IPO_FEE)}</td></tr><tr><td>ต้องมีเลเวลร้าน</td><td>${IPO_LV} (ตอนนี้ ${S.level})</td></tr><tr><td>จำนวนหุ้น</td><td>${ST_SHARES.toLocaleString('en-US')} หุ้น</td></tr><tr><td>ราคาเปิดโดยประมาณ</td><td>${fmt(p)}</td></tr><tr><td>คุณถือ</td><td>${(ST_SHARES*(1-ST_FLOAT)).toLocaleString('en-US')} หุ้น</td></tr><tr><td>กระจายให้นักลงทุนตอนเปิด</td><td>${(ST_SHARES*ST_FLOAT).toLocaleString('en-US')} หุ้น</td></tr></tbody></table>
   <div class="row"><button class="btn gold" data-ipo="1" ${ok?'':'disabled'}>จ่าย ${fmt(IPO_FEE)} เปิดหุ้น</button></div><p class="note">หุ้นและนักลงทุนเป็นระบบจำลองในเกม ไม่ใช่การลงทุนจริง</p>`);
-  const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;m.querySelector('[data-ipo]').onclick=()=>{if(S.money<IPO_FEE)return;spend('ipo',IPO_FEE);const price=fairPrice(),raise=price*ST_SHARES*ST_FLOAT;const fl=ST_SHARES*ST_FLOAT;const bots={};ST_BOTS.forEach(b=>bots[b.n]=Math.floor(fl/ST_BOTS.length));
-   S.stock={listed:true,price,mine:ST_SHARES-fl,pool:0,bots,netCash:raise,hist:[price],feed:[],t:0};S.stock.pool=fl-Object.values(bots).reduce((a,x)=>a+x,0);capIn(raise);softPlay('buy');log(`${S.shopName} เปิดหุ้นแล้ว`,'g');saveGame(true);stockDialog();renderRail();};return;}
+  const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;m.querySelector('[data-ipo]').onclick=()=>{if(S.money<IPO_FEE)return;spend('ipo',IPO_FEE);const price=fairPrice();const fl=ST_SHARES*ST_FLOAT;const bots={};ST_BOTS.forEach(b=>bots[b.n]=Math.floor(fl/ST_BOTS.length));S.stock={listed:true,price,mine:ST_SHARES-fl,pool:0,bots,netCash:0,hist:[price],feed:[],t:0};S.stock.pool=fl-Object.values(bots).reduce((a,x)=>a+x,0);toast(`หักค่าเปิดหุ้น ${fmt(IPO_FEE)} แล้ว`);softPlay('buy');log(`${S.shopName} เปิดหุ้นแล้ว`,'g');saveGame(true);stockDialog();renderRail();};return;}
  const fair=fairPrice(),val=st.mine*st.price;const first=st.hist[0];
  openModal(`<div class="sheethead"><h2>หุ้น${esc(S.shopName)}</h2><span class="price">${fmt(S.money)}</span><button class="btn plain" data-c="1">ปิด</button></div>
  <div class="monthhead"><div><small>ราคาหุ้น</small><b>${fmt(st.price)}</b></div><div><small>มูลค่าตามธุรกิจ</small><b>${fmt(fair)}</b></div><div><small>คุณถือ</small><b>${st.mine.toLocaleString('en-US')}</b></div><div><small>มูลค่าหุ้นของคุณ</small><b>${fmt(val)}</b></div></div>
@@ -98,3 +97,31 @@ function watchdog(dt){wdT+=dt;if(wdT<2)return;wdT=0;const p=G.player,mine=new Se
  G.chairs.forEach((c,i)=>{if(c&&(!G.cust.includes(c)||c.chair!==i))G.chairs[i]=null;});
  G.queue=G.queue.filter(c=>G.cust.includes(c));
  if(p.task&&p.task===p.lastTask){p.taskAge=(p.taskAge||0)+2;if(p.taskAge>=40){const t=p.task;if(t.c)t.c.owner=null;if(t.j)t.j.owner=null;p.task=null;p.carry=null;p.prog=0;p.taskAge=0;toast('ยกเลิกงานที่ค้างแล้ว');}}else{p.lastTask=p.task;p.taskAge=0;}}
+
+/* ===== จำนวนสั่งซื้อ และระบบเติมสต็อกปุ่มเดียว ===== */
+let orderQty=1;
+const FILL_PRICE=100000,FILL_DEF={lens:10,frames:10,ct:5};
+function fillGet(kind,key){const v=S.fill[kind]&&S.fill[kind][key];return v==null?FILL_DEF[kind]:v;}
+function fillPlan(){const out=[];
+ Object.keys(S.lens).filter(id=>S.lens[id].listed&&lensAvailable(id)).forEach(id=>{const pend=G.deliveries.filter(d=>d.id===id).reduce((a,d)=>a+d.qty,0);out.push({need:fillGet('lens',id)-lensState(id).stock-pend,unit:LENSES[id].cost,led:'lensBuy',add:q=>{lensState(id).stock+=q;}});});
+ Object.keys(FRAME_CATS).filter(frameUnlocked).forEach(k=>out.push({need:fillGet('frames',k)-frameStock(k),unit:FRAME_CATS[k].cost,led:'frameCost',add:q=>{S.frames[k]=frameStock(k)+q;}}));
+ ctList().forEach(k=>CTPOW.forEach(p=>out.push({need:fillGet('ct',k)-ctStock(k,p),unit:CT[k].cost,led:'lensBuy',add:q=>{S.ct[k+'|'+p]=ctStock(k,p)+q;}})));
+ return out.filter(x=>x.need>0);}
+function fillSummary(){const p=fillPlan();return{n:p.reduce((a,x)=>a+x.need,0),cost:p.reduce((a,x)=>a+x.need*x.unit,0)};}
+function fillAll(){const plan=fillPlan();let n=0,c=0,short=false;plan.forEach(x=>{const q=Math.min(x.need,Math.floor(Math.max(0,S.money)/x.unit));if(q<x.need)short=true;if(q<=0)return;spend(x.led,q*x.unit);x.add(q);n+=q;c+=q*x.unit;});
+ G.today.buy+=c;if(n){softPlay('buy');log(`เติมสต็อก ${n} ชิ้น ${fmt(c)}`,'g');saveGame(true);}
+ toast(!plan.length?'สต็อกครบตามที่ตั้งไว้แล้ว':short?`เงินไม่พอเติมครบ เติมได้ ${n} ชิ้น ${fmt(c)}`:`เติมสต็อกแล้ว ${n} ชิ้น ${fmt(c)}`);renderRail();}
+function fillPanel(){if(!own('autostock'))return `<p class="note">ซื้อ "ระบบเติมสต็อกปุ่มเดียว" ได้ที่ ซื้อของ &gt; ปรับปรุงร้าน ราคา ${fmt(FILL_PRICE)}</p>`;const f=fillSummary();
+ return `<div class="apptbox"><span>เติมสต็อกทุกชิ้นให้ถึงจำนวนที่ตั้งไว้ · ขาด ${f.n} ชิ้น · ใช้เงิน ${fmt(f.cost)}<br><small>ของมาถึงทันที</small></span><button class="btn gold" data-fillall="1" ${f.n?'':'disabled'}>เติมทุกชิ้น</button><button class="btn plain" data-fillset="1">ตั้งจำนวน</button></div>`;}
+function fillDialog(){const row=(kind,key,name,stock)=>`<div class="kit"><span class="tx">${name}<small>มีอยู่ ${stock}</small></span><input class="qtyinput" type="number" min="0" max="999" id="fl_${kind}_${key}" data-fl="${kind}|${key}" value="${fillGet(kind,key)}" aria-label="จำนวนเป้าหมาย ${name}"></div>`;
+ const lens=Object.keys(S.lens).filter(id=>S.lens[id].listed&&lensAvailable(id));
+ openModal(`<div class="sheethead"><h2>ตั้งจำนวนเติมสต็อก</h2><button class="btn plain" data-c="1">เสร็จ</button></div>
+ <p class="note">ใส่จำนวนที่อยากให้มีของแต่ละสินค้า ใส่ 0 ถ้าไม่ต้องการเติม เลนส์ที่ยังไม่ได้เปิดรายการต้องสั่งครั้งแรกเองก่อน</p>
+ <div class="row"><span class="mini">ตั้งทุกชิ้นเป็น</span>${[0,5,10,20,50].map(n=>`<button class="tab" data-setall="${n}">${n}</button>`).join('')}</div>
+ <h3>เลนส์ (คู่)</h3><div class="grid">${lens.map(id=>row('lens',id,LENSES[id].name,lensState(id).stock)).join('')}</div>
+ <h3>กรอบแว่น (ชิ้น)</h3><div class="grid">${Object.keys(FRAME_CATS).filter(frameUnlocked).map(k=>row('frames',k,FRAME_CATS[k].name,frameStock(k))).join('')}</div>
+ ${ctList().length?`<h3>คอนแทคเลนส์ (กล่องต่อค่าสายตา)</h3><div class="grid">${ctList().map(k=>row('ct',k,`${CT[k].brand} ${CTTYPE[CT[k].type]}`,CTPOW.reduce((a,p)=>a+ctStock(k,p),0))).join('')}</div>`:''}`);
+ const m=$('#modal');m.querySelector('[data-c]').onclick=()=>{saveGame(true);hoyaDialog();};
+ m.querySelectorAll('[data-fl]').forEach(i=>i.onchange=()=>{const[a,b]=i.dataset.fl.split('|');const v=clamp(Math.floor(+i.value)||0,0,999);i.value=v;(S.fill[a]=S.fill[a]||{})[b]=v;});
+ m.querySelectorAll('[data-setall]').forEach(b=>b.onclick=()=>{m.querySelectorAll('[data-fl]').forEach(i=>{i.value=b.dataset.setall;i.onchange();});softPlay('pick');});}
+function qtyBar(){return `<div class="row qtybar"><b>จำนวนที่จะสั่ง</b>${[1,2,5,10,20].map(n=>`<button class="tab ${orderQty===n?'on':''}" data-qty="${n}">${n}</button>`).join('')}<label class="vh" for="qtyIn">ใส่จำนวนเอง</label><input class="qtyinput" id="qtyIn" type="number" min="1" max="999" value="${orderQty}"></div>`;}

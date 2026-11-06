@@ -173,3 +173,6 @@ button.mpin:hover .spr{transform:translateY(-3px)}
 #stagewrap{width:min(calc(100vw - 316px),calc((100vh - 64px) * 1.5))}
 .gpick{justify-content:center}.gpick .item{align-items:center;min-width:150px}
 .suform{display:grid;gap:6px}.suform .btn{margin-top:6px}
+
+.qtyinput{width:76px;min-height:38px;font:400 15px var(--body);border:2px solid var(--ink);border-radius:6px;padding:4px 6px;background:#fff;color:var(--ink);user-select:text;-webkit-user-select:text}
+.qtybar{background:var(--paper2);border-radius:8px;padding:6px 10px}

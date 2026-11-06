@@ -55,13 +55,12 @@ const MISSIONS=[
 ];
 const MISSION=Object.fromEntries(MISSIONS.map(m=>[m.id,m]));
 const FINDING={normal:'ปกติ',glasses:'ตัดแว่น',refer:'ส่งต่อจักษุแพทย์'};
-const HOSP_COOL=5;
 function hasKit(k){return !!S.kit[k];}
 function missionOpen(m){return !m.req||S.hosp.done[m.req];}
 function teamFor(m){const free=k=>!isTraining(k);const od=S.staff.filter(k=>STAFF[k].role==='od'&&free(k)),sl=S.staff.filter(k=>STAFF[k].role==='sales'&&free(k));return{od:od.slice(0,m.od),sl:sl.slice(0,m.sl)};}
 function missionReady(m){const t=teamFor(m);return t.od.length>=m.od&&t.sl.length>=m.sl&&m.kit.every(hasKit);}
-function hospCool(m){const d=S.hosp.last[m.id];return d==null?0:Math.max(0,d+HOSP_COOL-S.day);}
-function hospitalCall(){const m=MISSIONS.find(x=>missionOpen(x)&&!S.hosp.called[x.id]&&S.day>=3);if(!m)return false;S.hosp.called[m.id]=1;saveGame(true);softPlay('buy');
+function hospCool(m){return S.hosp.lastM===monthOf(S.day)?MONTH_DAYS-dayInMonth(S.day)+1:0;}
+function hospitalCall(){if(window.__qaNoCall)return false;const mo=monthOf(S.day);if(S.day<3||S.hosp.callM===mo||S.hosp.lastM===mo)return false;const open=MISSIONS.filter(missionOpen);const m=open.find(x=>!S.hosp.done[x.id])||pick(open);if(!m)return false;S.hosp.callM=mo;saveGame(true);softPlay('buy');
  openModal(`<div class="sheethead"><h2>${m.hospital} ติดต่อมา</h2></div><div class="say">${sprHTML('h_hosp',100)}<p>${m.say}</p></div>
  <div class="row"><button class="btn gold" data-see="1">ดูเงื่อนไขภารกิจ</button><button class="btn plain" data-c="1">ไว้ก่อน</button></div>`);
  const b=$('#modal');b.querySelector('[data-c]').onclick=closeModal;b.querySelector('[data-see]').onclick=()=>hospitalDialog(m.id);return true;}
@@ -79,9 +78,9 @@ function hospitalDialog(id){if(id)hospFocus=id;const open=MISSIONS.filter(missio
   <h3>รางวัลเมื่อสำเร็จ</h3><ul class="check big"><li>เงินทุนสูงสุด ${fmt(m.money*1.5)} ตามแรงค์</li><li>EXP ร้าน ${m.xp}</li><li>ชื่อเสียงร้าน +${m.rep}</li><li>โทรฟี่ Mobile Eye Care</li><li>${MISSIONS.filter(x=>x.req===m.id).map(x=>'ปลดล็อก '+x.hospital).join(', ')||'ภารกิจระดับสูงสุด'}</li></ul></div>
  <div><h3>อุปกรณ์ที่ต้องเตรียม</h3><div class="kitlist">${m.kit.map(kitRow).join('')}</div>
  <h3>เสริมเพื่อช่วยงาน</h3><div class="kitlist">${Object.keys(KIT).filter(k=>!m.kit.includes(k)&&KIT[k].fx).map(kitRow).join('')}</div></div></div>
- ${cool?`<p class="err">ภารกิจนี้รับได้อีกครั้งใน ${cool} วัน</p>`:''}
+ ${cool?`<p class="err">ออกหน่วยได้เดือนละ 1 ครั้ง รับได้อีกครั้งใน ${cool} วัน</p>`:''}
  <div class="row"><button class="btn gold" data-sched="1" ${!ready||cool?'disabled':''}>${sched?'นัดไว้แล้ว · ออกหน่วยวันถัดไป':'นัดออกหน่วยวันถัดไป'}</button><button class="btn" data-now="1" ${!ready||!canNow?'disabled':''} title="ทำได้เมื่อไม่มีลูกค้าในร้าน">ออกหน่วยตอนนี้</button></div>
- <p class="note">การออกหน่วยใช้เวลาทั้งวัน ร้านจะไม่รับลูกค้าในวันนั้น โรงพยาบาลและผลตรวจในเกมเป็นเรื่องสมมติ ไม่ใช่คำแนะนำทางการแพทย์</p>`,{wide:true});
+ <p class="note">ออกหน่วยได้เดือนละ 1 ครั้ง · การออกหน่วยใช้เวลาทั้งวัน ร้านจะไม่รับลูกค้าในวันนั้น โรงพยาบาลและผลตรวจในเกมเป็นเรื่องสมมติ ไม่ใช่คำแนะนำทางการแพทย์</p>`,{wide:true});
  const b=$('#modal');b.querySelector('[data-c]').onclick=closeModal;
  b.querySelectorAll('[data-m]').forEach(x=>x.onclick=()=>hospitalDialog(x.dataset.m));
  b.querySelectorAll('[data-kit]').forEach(x=>x.onclick=()=>{const k=KIT[x.dataset.kit];if(S.money<k.price)return;spend('equip',k.price);S.kit[x.dataset.kit]=1;softPlay('buy');saveGame(true);hospitalDialog();renderRail();});
@@ -93,7 +92,7 @@ function kitRow(k){const d=KIT[k],o=hasKit(k);return `<div class="kit ${o?'owned
 
 /* ---------- ฉากจับเวลา ---------- */
 const MSEATS=[];for(let r=0;r<2;r++)for(let c=0;c<5;c++)MSEATS.push({x:130+c*160,y:r?632:482});
-function startMobile(m){S.hosp.sched=null;S.hosp.last[m.id]=S.day;const t=teamFor(m);G.cust=[];G.queue=[];G.jobs=[];G.chairs=[null,null];G.workers.forEach(w=>{w.task=null;w.prog=0;});G.returning=[];G.event=null;G.player.carry=null;G.player.tasks=[];G.player.task=null;
+function startMobile(m){S.hosp.sched=null;S.hosp.last[m.id]=S.day;S.hosp.lastM=monthOf(S.day);const t=teamFor(m);G.cust=[];G.queue=[];G.jobs=[];G.chairs=[null,null];G.workers.forEach(w=>{w.task=null;w.prog=0;});G.returning=[];G.event=null;G.player.carry=null;G.player.tasks=[];G.player.task=null;
  const mk=(key,role,x,y)=>({key,role,x,y,hx:x,hy:y,dir:'f',flip:false,t:0,q:[],task:null,prog:0,moving:false});
  const staff=[mk(t.od[0],'od',235,345),mk(t.od[1],'od',665,345),mk(t.sl[0],'sales',450,338)];
  G.mobile={m,t:m.time+(hasKit('truck')?20:0),staff,seats:Array(10).fill(null),sel:null,spawned:0,spawnT:.2,recs:[],sales:0,missed:0,advice:0,started:false,count:3,fx:[]};

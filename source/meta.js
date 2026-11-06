@@ -1,8 +1,8 @@
 /* ===== ระบบเดือน บัญชี แผนที่ แข่งขัน อบรม โทรฟี่ =====
  เพิ่มหลักสูตร บริษัท ร้านคู่แข่ง หรือโทรฟี่ใหม่ได้โดยเพิ่มข้อมูลในตาราง ไม่ต้องแก้ระบบหลัก */
 const MONTH_DAYS=10;
-const INCOME={exam:'ค่าตรวจวัดสายตา',lens:'ขายเลนส์',frame:'ขายกรอบ/งานซ่อม',tip:'ทิป',prize:'เงินรางวัลแข่งขัน',branch:'กำไรจากสาขา',reward:'รางวัลโทรฟี่'};
-const EXPENSE={rent:'ค่าเช่าร้าน',util:'ค่าน้ำค่าไฟ',salary:'เงินเดือนพนักงาน',comm:'ค่าคอมมิชชัน',lensBuy:'สั่งเลนส์',frameCost:'ต้นทุนกรอบ',equip:'ซื้ออุปกรณ์/ตกแต่ง',hire:'ค่าจ้างเริ่มงาน',train:'ค่าอบรม',incident:'เหตุการณ์ไม่คาดคิด'};
+const INCOME={exam:'ค่าตรวจวัดสายตา',lens:'ขายเลนส์',frame:'ขายกรอบ/งานซ่อม',tip:'ทิป',prize:'เงินรางวัลแข่งขัน',branch:'กำไรจากสาขา',reward:'รางวัลโทรฟี่',depInt:'ดอกเบี้ยเงินฝาก'};
+const EXPENSE={rent:'ค่าเช่าร้าน',util:'ค่าน้ำค่าไฟ',salary:'เงินเดือนพนักงาน',comm:'ค่าคอมมิชชัน',lensBuy:'สั่งเลนส์',frameCost:'ต้นทุนกรอบ',equip:'ซื้ออุปกรณ์/ตกแต่ง',hire:'ค่าจ้างเริ่มงาน',train:'ค่าอบรม',incident:'เหตุการณ์ไม่คาดคิด',loanInt:'ดอกเบี้ยเงินกู้',ipo:'ค่าเปิดหุ้น'};
 const COMM={sales:.05,od:.10,tech:30};
 function blankLedger(){const o={};Object.keys(INCOME).forEach(k=>o[k]=0);Object.keys(EXPENSE).forEach(k=>o[k]=0);return o;}
 function sumIncome(l){return Object.keys(INCOME).reduce((a,k)=>a+(l[k]||0),0);}
@@ -22,8 +22,8 @@ const STAFF_YEARS={od1:1,od2:3,od3:8,sl1:.5,sl2:2,sl3:5,te1:.5,te2:2,te3:6};
 const STAFF_LV={od1:2,od2:2,od3:3,sl1:1,sl2:2,sl3:3,te1:1,te2:2,te3:3};
 const MAX_STAFF_LV=5;
 function sdOf(k){if(!S.staffData[k])S.staffData[k]={lv:k==='owner'?2:STAFF_LV[k]||1,xp:0,years:k==='owner'?1:STAFF_YEARS[k]||0,courses:[],training:null};return S.staffData[k];}
-function staffName(k){return k==='owner'?'คุณ (เจ้าของร้าน)':STAFF[k].name;}
-function staffSprite(k){return k==='owner'?'od1f':k+'f';}
+function staffName(k){return k==='owner'?`${S.owner.name} (เจ้าของร้าน)`:staffNameOf(k);}
+function staffSprite(k){return k==='owner'?playerKey()+'f':k+'f';}
 function addStaffXp(k,n){const d=sdOf(k);if(d.lv>=MAX_STAFF_LV)return;d.xp+=n;const need=d.lv*100;if(d.xp>=need){d.xp-=need;d.lv++;log(`${staffName(k)} เลื่อนเป็น Lv.${d.lv}`,'g');}}
 function levelSpeed(k){return 1+(sdOf(k).lv-1)*.06;}
 
@@ -121,7 +121,7 @@ const RIVAL=Object.fromEntries(RIVALS.map(r=>[r.id,r]));
 const EVENT_LEN=90,EVENT_COOL=2;
 function rivalOpen(r){const i=RIVALS.indexOf(r);if(r.area>=S.areas)return false;return i===0||S.ev.beat[RIVALS[i-1].id]||RIVALS[i-1].area<r.area;}
 function coolLeft(r){const d=S.ev.last[r.id];return d==null?0:Math.max(0,d+EVENT_COOL-S.day);}
-function cityRows(){const m=monthOf(S.day);const rows=RIVALS.map(r=>({name:r.name,spr:r.spr,v:Math.round(r.pace*170*m*(S.ev.beat[r.id]?.8:1)),me:false}));rows.push({name:'Social Eyewear',spr:'r_home',v:Math.round(S.stats.total),me:true});return rows.sort((a,b)=>b.v-a.v);}
+function cityRows(){const m=monthOf(S.day);const rows=RIVALS.map(r=>({name:r.name,spr:r.spr,v:Math.round(r.pace*170*m*(S.ev.beat[r.id]?.8:1)),me:false}));rows.push({name:S.shopName,spr:'r_home',v:Math.round(S.stats.total),me:true});return rows.sort((a,b)=>b.v-a.v);}
 function cityRank(){return cityRows().findIndex(r=>r.me)+1;}
 let mapTab='map';
 function mapDialog(){
@@ -168,7 +168,7 @@ function startEvent(r){
 function tickEvent(dt){const e=G.event;e.t-=dt;e.rows.forEach(x=>{x.sales+=x.pace*dt*rnd(.75,1.25);});if(e.t<=0)finishEvent();}
 function eventRank(){const e=G.event;return e.rows.filter(x=>x.sales>e.me).length+1;}
 function finishEvent(){const e=G.event,r=RIVAL[e.id];G.event=null;
- const rows=[...e.rows,{name:'Social Eyewear',sales:e.me,me:true}].sort((a,b)=>b.sales-a.sales);const rank=rows.findIndex(x=>x.me)+1;
+ const rows=[...e.rows,{name:S.shopName,sales:e.me,me:true}].sort((a,b)=>b.sales-a.sales);const rank=rows.findIndex(x=>x.me)+1;
  const base=eventPrize(r),prize=rank===1?base:rank===2?base*.3:rank===3?base*.1:0;
  if(prize)earn('prize',prize);const st=S.ev;(st.hist=st.hist||[]).push({r:r.name,m:e.mode,k:rank});if(st.hist.length>40)st.hist.shift();
  if(rank===3)st.bronze=1;if(rank===2)st.silver=1;
@@ -183,11 +183,11 @@ function finishEvent(){const e=G.event,r=RIVAL[e.id];G.event=null;
  <table class="ledger"><tbody>${rows.map((x,i)=>`<tr class="${x.me?'hl':''}"><td>${i+1}. ${x.name}</td><td>${evFmt(e.mode,x.sales)}</td></tr>`).join('')}</tbody></table>
  <div class="row"><button class="btn gold" data-c="1">กลับไปขายต่อ</button></div>`,{lock:true});
  $('#modal [data-c]').onclick=closeModal;renderRail();}
-function drawEventHud(){const e=G.event;if(!e)return;const rows=[...e.rows.map(x=>({n:x.name,v:x.sales})),{n:'ร้านเรา',v:e.me,me:1}].sort((a,b)=>b.v-a.v);
- const x=(W-400)/2,y=8,w=400,h=26+rows.length*22;ctx.fillStyle='rgba(22,32,74,.92)';ctx.fillRect(x,y,w,h);
+function drawEventHud(){const e=G.event;if(!e)return;ctx.save();ctx.scale(1.4,1.4);const rows=[...e.rows.map(x=>({n:x.name,v:x.sales})),{n:'ร้านเรา',v:e.me,me:1}].sort((a,b)=>b.v-a.v);
+ const x=(W/1.4-400)/2,y=8,w=400,h=26+rows.length*22;ctx.fillStyle='rgba(22,32,74,.92)';ctx.fillRect(x,y,w,h);
  ctx.font='500 15px Mitr,"Noto Sans Thai",Tahoma,sans-serif';ctx.fillStyle='#ffd34d';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`${EVMODES[e.mode].name} · เหลือ ${Math.ceil(e.t)} วินาที`,x+w/2,y+14);
  const mx=Math.max(1,...rows.map(r=>r.v));rows.forEach((r,i)=>{const yy=y+28+i*22;ctx.textAlign='left';ctx.font='400 13px Mitr,"Noto Sans Thai",Tahoma,sans-serif';ctx.fillStyle=r.me?'#ffd34d':'#fff';ctx.fillText(`${i+1}. ${r.n}`,x+10,yy+7);
-  ctx.fillStyle='#3a4678';ctx.fillRect(x+130,yy+1,170,12);ctx.fillStyle=r.me?'#f6b21b':'#6fa3ff';ctx.fillRect(x+130,yy+1,170*r.v/mx,12);ctx.textAlign='right';ctx.fillStyle='#fff';ctx.fillText(evFmt(e.mode,r.v),x+w-10,yy+7);});}
+  ctx.fillStyle='#3a4678';ctx.fillRect(x+130,yy+1,170,12);ctx.fillStyle=r.me?'#f6b21b':'#6fa3ff';ctx.fillRect(x+130,yy+1,170*r.v/mx,12);ctx.textAlign='right';ctx.fillStyle='#fff';ctx.fillText(evFmt(e.mode,r.v),x+w-10,yy+7);});ctx.restore();}
 
 /* ---------- บัญชีและกราฟเส้น ---------- */
 function lineChart(labels,series,title){
@@ -214,7 +214,7 @@ function wireCharts(){document.querySelectorAll('#modal .chartbox').forEach(b=>{
 function ledgerTable(l,fixedPreview){const rows=(o)=>Object.keys(o).filter(k=>l[k]).map(k=>`<tr><td>${o[k]}</td><td>${fmt(l[k])}</td></tr>`).join('');
  const inc=sumIncome(l),exp=sumExpense(l);const pv=fixedPreview||0;
  return `<div class="two"><div><h3>รายรับ</h3><table class="ledger"><tbody>${rows(INCOME)||'<tr><td>ยังไม่มี</td><td>฿0</td></tr>'}<tr class="t"><td>รวม</td><td>${fmt(inc)}</td></tr></tbody></table></div>
- <div><h3>รายจ่าย</h3><table class="ledger"><tbody>${rows(EXPENSE)||'<tr><td>ยังไม่มี</td><td>฿0</td></tr>'}<tr class="t"><td>รวม</td><td>${fmt(exp)}</td></tr></tbody></table></div></div>`;}
+ <div><h3>รายจ่าย</h3><table class="ledger"><tbody>${rows(EXPENSE)||'<tr><td>ยังไม่มี</td><td>฿0</td></tr>'}<tr class="t"><td>รวม</td><td>${fmt(exp)}</td></tr></tbody></table></div></div>${l.capIn||l.capOut?`<p class="note">เงินกู้ เงินฝาก และหุ้น ไม่นับเป็นกำไร: เข้า ${fmt(l.capIn||0)} · ออก ${fmt(l.capOut||0)}</p>`:''}`;}
 let acctTab='now';
 function accountDialog(){
  const l=S.ledger;const fixed=rentFee()+utilFee()+salaryFee()+S.accComm;const net=sumIncome(l)-sumExpense(l);
@@ -234,7 +234,7 @@ function historyBlock(){const h=S.history;return `${lineChart(h.map(x=>'เด�
  ${h.length?`<div class="tablewrap"><table class="ledger"><tbody><tr><td><b>เดือน</b></td><td><b>รายรับ</b></td><td><b>รายจ่าย</b></td><td><b>กำไร/ขาดทุน</b></td><td><b>คงเหลือ</b></td></tr>${[...h].reverse().map(x=>`<tr><td>${x.m}</td><td>${fmt(x.income)}</td><td>${fmt(x.expense)}</td><td class="${x.profit<0?'neg':''}">${fmt(x.profit)}</td><td>${fmt(x.balance)}</td></tr>`).join('')}</tbody></table></div>`:''}`;}
 function closeMonth(){const m=monthOf(S.day-1),l=S.ledger;
  const branch=S.branches.reduce((a,id)=>a+RIVAL[id].income,0);if(branch)earn('branch',branch);
- spend('rent',rentFee());spend('util',utilFee());spend('salary',salaryFee());spend('comm',S.accComm);S.accComm=0;
+ financeMonth();spend('rent',rentFee());spend('util',utilFee());spend('salary',salaryFee());spend('comm',S.accComm);S.accComm=0;
  const income=sumIncome(l),expense=sumExpense(l),profit=income-expense;
  const rec={m,income,expense,profit,balance:S.money,l:Object.assign({},l)};S.history.push(rec);if(S.history.length>120)S.history.shift();S.history.slice(0,-24).forEach(x=>delete x.l);
  if(profit>Math.max(...RIVALS.filter(rivalOpen).map(r=>r.pace*1400)))S.stats.profitKing=1;

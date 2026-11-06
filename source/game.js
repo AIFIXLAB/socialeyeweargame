@@ -1,7 +1,7 @@
 'use strict';
 /* ===== Social Eyewear Game — ร้านแว่นตาจำลอง ===== */
-const GAME_VERSION='1.8';
-const W=1200,H=907,SCALE=1.5,MW=900,MH=680;
+const GAME_VERSION='2.0';
+const W=1536,H=1024,SCALE=1,MW=900,MH=680;
 const $=s=>document.querySelector(s);
 const fmt=n=>'฿'+Math.round(n).toLocaleString('en-US');
 const rnd=(a,b)=>a+Math.random()*(b-a);
@@ -107,11 +107,11 @@ const CUST=[
 const DAY_LEN=150;
 
 /* ---------- world layout (900x680) ---------- */
-const SPOT={door:{x:600,y:345},frames:{x:250,y:442},lab:{x:985,y:415},home:{x:600,y:440},contact:{x:925,y:652},cash:{x:985,y:722},counter:{x:985,y:825}};
-const CHAIRS=[{x:95,y:610,sx:170,sy:640},{x:95,y:805,sx:170,sy:835}];
-const QUEUE=[{x:985,y:825},{x:880,y:835},{x:790,y:845}];
-const SEATS=[{x:540,y:600},{x:610,y:600},{x:680,y:600},{x:540,y:755},{x:610,y:755},{x:680,y:755},{x:475,y:680},{x:745,y:680}];
-const ZONE={exam:{x:0,y:465,w:428,h:442},counter:{x:800,y:692,w:400,h:215},lab:{x:800,y:300,w:400,h:180},frames:{x:20,y:300,w:470,h:160}};
+const SPOT={door:{x:755,y:945},frames:{x:270,y:240},lab:{x:1250,y:345},home:{x:755,y:300},contact:{x:985,y:220},cash:{x:1335,y:780},counter:{x:1335,y:900}};
+const CHAIRS=[{x:170,y:503,sx:255,sy:515},{x:170,y:763,sx:255,sy:775}];
+const QUEUE=[{x:1335,y:900},{x:1200,y:905},{x:1060,y:905}];
+const SEATS=[{x:700,y:437},{x:770,y:437},{x:840,y:437},{x:700,y:687},{x:770,y:687},{x:840,y:687},{x:580,y:565},{x:960,y:565}];
+const ZONE={exam:{x:35,y:293,w:465,h:580},counter:{x:1128,y:745,w:360,h:180},lab:{x:1030,y:205,w:455,h:320},frames:{x:60,y:170,w:440,h:120}};
 
 /* ---------- state ---------- */
 let S=null;              // saved state
@@ -125,7 +125,7 @@ let dragging=null;
 let screen='title';
 let hover=null;
 
-function fresh(code){return{v:7,appts:[],ct:{},penalty:0,layout:{},frames:{basic:12},rel:{},quests:{},lastRandom:0,minigame:true,kit:{},hosp:{done:{},last:{},best:{},called:{},reports:[],sched:null},rev:0,xp:0,level:1,ledger:blankLedger(),history:[],daily:[],accComm:0,dayStart:0,dayHits:0,staffData:{},areas:1,branches:[],trophies:{},ev:{beat:{},last:{},wins:0,bronze:0,silver:0,gold:0},stats:{exams:0,veryHappy:0,total:0,sales:0,lensSold:0,frameSold:0,premium:0,blue:0,kinds:{},fashion:0,sun:0,sport:0,computer:0,kids:0,seniors:0,families:0,vip:0,topItem:0,satSum:0,satN:0,dayMax:0,targetHit:0,streak:0,bestStreak:0,profitKing:0,events:0},code,money:15000,rep:3,day:1,dayT:0,owned:{},lens:{hilux:{listed:true,stock:8}},staff:[],floor:0,floors:{0:true},served:0,earned:0,sound:true};}
+function fresh(code){return{v:9,owner:{gender:'m',name:'เจ้าของร้าน'},shopName:'Social Eyewear',bank:{dep:0,loan:0},stock:null,place:{},names:{},appts:[],ct:{},penalty:0,layout:{},frames:{basic:12},rel:{},quests:{},lastRandom:0,minigame:true,kit:{},hosp:{done:{},last:{},best:{},called:{},reports:[],sched:null},rev:0,xp:0,level:1,ledger:blankLedger(),history:[],daily:[],accComm:0,dayStart:0,dayHits:0,staffData:{},areas:1,branches:[],trophies:{},ev:{beat:{},last:{},wins:0,bronze:0,silver:0,gold:0},stats:{exams:0,veryHappy:0,total:0,sales:0,lensSold:0,frameSold:0,premium:0,blue:0,kinds:{},fashion:0,sun:0,sport:0,computer:0,kids:0,seniors:0,families:0,vip:0,topItem:0,satSum:0,satN:0,dayMax:0,targetHit:0,streak:0,bestStreak:0,profitKing:0,events:0},code,money:15000,rep:3,day:1,dayT:0,owned:{},lens:{hilux:{listed:true,stock:8}},staff:[],floor:0,floors:{0:true},served:0,earned:0,sound:true};}
 function newLive(){return{cust:[],jobs:[],player:{key:'od1',x:SPOT.home.x,y:SPOT.home.y,dir:'f',flip:false,tasks:[],task:null,prog:0,t:0},workers:[],deliveries:[],fx:[],spawn:3,seq:0,event:null,chairs:[null,null],queue:[],today:blankDay(),closing:false,summary:false,feed:[],seen:{},saveT:0};}
 function blankDay(){return{rev:0,lens:0,frame:0,exam:0,tip:0,cost:0,served:0,left:0,buy:0};}
 function own(id){return !!(S&&S.owned[id]);}
@@ -248,7 +248,7 @@ function pinDialog(mode){let pin='';
    (async()=>{
     if(mode==='new'){let e;try{e=await hasSave(pin);}catch(x){return draw('เชื่อมเซฟกลางไม่ได้ ลองใหม่อีกครั้ง');}
      if(e)return draw(`รหัส ${pin} มีเซฟอยู่แล้ว เปลี่ยนรหัส หรือกด LOAD GAME`);
-     S=fresh(pin);cloud.rev=0;cloud.conflict=false;cloud.state='';closeModal();startPlay(true);}
+     S=fresh(pin);cloud.rev=0;cloud.conflict=false;cloud.state='';closeModal();startPlay(true);if(window.__qa)welcome();else setupDialog();}
     else{const r=await loadGame(pin);
      if(r==='none')return draw(`ไม่พบเซฟรหัส ${pin}`);if(r==='corrupt')return draw(`เซฟรหัส ${pin} เสีย อ่านไม่ได้ เกมไม่ได้เขียนทับข้อมูลเดิม`);if(r==='error')return draw('เชื่อมเซฟกลางไม่ได้ ลองใหม่อีกครั้ง');
      closeModal();startPlay();}
@@ -278,11 +278,11 @@ function optionDialog(){
 async function showTitleThen(o){closeModal();await cloud.init();await cloud.flush();applySave(o.code,JSON.stringify(o));startPlay(false,true);toast(`นำเข้าเซฟรหัส ${o.code} แล้ว`);}
 
 /* ---------- start ---------- */
-function startPlay(isNew,force){screen='play';railKey='';paused=0;G=newLive();$('#title').hidden=true;$('#play').hidden=false;
+function startPlay(isNew,force){G=null;screen='play';railKey='';paused=0;G=newLive();$('#title').hidden=true;$('#play').hidden=false;
  S.staff.forEach(addWorker);if(isNew||force||cloud.needUpload)saveGame(true,force);cloud.needUpload=false;sdOf('owner');applyLayout();refreshQuests();checkTrophies();renderRail();
- if(isNew)welcome();else toast(`ยินดีต้อนรับกลับ · วันที่ ${dayInMonth(S.day)} เดือน ${monthOf(S.day)}`);}
+ if(!isNew&&!window.__qaNew)toast(`ยินดีต้อนรับกลับ · วันที่ ${dayInMonth(S.day)} เดือน ${monthOf(S.day)}`);}
 function welcome(){openModal(`<div class="sheethead"><h2>เปิดร้านวันแรก</h2></div>
- <div class="say">${sprHTML('od1f',96)}<p>รหัสเซฟของคุณคือ <b>${S.code}</b> วันนี้คุณทำทุกอย่างเองก่อน พอมีเงินค่อยจ้างคนและซื้อเครื่องเพิ่ม</p></div>
+ <div class="say">${sprHTML(playerKey()+'f',96)}<p>รหัสเซฟของคุณคือ <b>${S.code}</b> วันนี้คุณทำทุกอย่างเองก่อน พอมีเงินค่อยจ้างคนและซื้อเครื่องเพิ่ม</p></div>
  <table class="ledger"><tbody>
  <tr><td>1. คลิกลูกค้า</td><td>ถ้าขึ้นคลิปบอร์ด ลากไปห้องตรวจเพื่อวัดตา</td></tr>
  <tr><td>2. ขึ้นเครื่องหมาย ?</td><td>คุยแล้วแนะนำเลนส์ให้ตรงอาการ ถ้าไม่มีของ สั่งจาก Hoya</td></tr>
@@ -330,7 +330,7 @@ function toExam(c){if(c.phase!=='idle'||step(c)!=='exam')return false;
  const i=[0,1].slice(0,chairCount()).find(n=>!G.chairs[n]);
  if(i===undefined){toast('ห้องตรวจไม่ว่าง รออีกนิด');return false;}
  G.chairs[i]=c;c.chair=i;c.tx=CHAIRS[i].x;c.ty=CHAIRS[i].y+22;c.phase='walk';c.then='atChair';beep('ok');
- if(!G.workers.some(w=>w.role==='od'))assignExamPlayer(c);
+ if(!G.workers.some(w=>w.role==='od'&&!isTraining(w.key)))assignExamPlayer(c);
  return true;}
 function assignExamPlayer(c){if(c.owner)return;c.owner='player';const chair=CHAIRS[c.chair];
  pushTask({kind:'exam',c,x:chair.sx,y:chair.sy,dur:examTime(1),label:'วัดสายตา'});}
@@ -413,7 +413,7 @@ function runPlayerTask(dt){const p=G.player;if(keyMove(dt))return;
  p.prog+=dt;
  if(p.prog>=dur){p.task=null;p.prog=0;finishTask(t);}
 }
-function finishTask(t){const c=t.c;
+function finishTask(t){const c=t.c;if(!$('#modal').hidden&&!['cash','deliver','deliverCt','repairTalk'].includes(t.kind)){G.player.tasks.unshift(Object.assign(t,{dur:.05}));return;}
  switch(t.kind){
   case 'exam':examMinigame(c,()=>{if(G.cust.includes(c))completeExam(c);});break;
   case 'deliver':G.player.carry=null;chooseFrame(c,t.cat);renderRail();break;
@@ -428,7 +428,7 @@ function finishTask(t){const c=t.c;
 /* --- staff AI --- */
 function addWorker(key){const d=STAFF[key];sdOf(key);G.workers.push({key,role:d.role,get speed(){return d.speed*levelSpeed(key);},acc:d.acc||1,x:SPOT.door.x,y:SPOT.door.y,dir:'f',flip:false,task:null,prog:0,t:Math.random()*5});}
 function workerTick(w,dt){
- if(isTraining(w.key))return;
+ if(isTraining(w.key)){if(w.task){const t=w.task;if(t.c&&t.c.owner===w)t.c.owner=null;if(t.j&&t.j.owner===w)t.j.owner=null;w.task=null;}return;}
  if(w.task){const t=w.task;
   if(t.c&&!G.cust.includes(t.c)){w.task=null;return;}
   if(t.j&&!G.jobs.includes(t.j)){w.task=null;return;}
@@ -468,7 +468,7 @@ function workerTick(w,dt){
 
 /* ---------- main update ---------- */
 function update(dt){
- tickRandom();updatePenalty();
+ tickRandom();updatePenalty();watchdog(dt);stockTick(dt);
  G.saveT+=dt;if(G.saveT>30){G.saveT=0;saveGame(true);}
  if(G.event)tickEvent(dt);
  if(!G.closing||G.event){if(!G.event)S.dayT+=dt;
@@ -500,35 +500,32 @@ function update(dt){
 }
 
 /* ---------- draw ---------- */
-function floorDraw(){const i=S.floor,fw=ATLAS.FW,fh=ATLAS.FH,c=i%4,r=Math.floor(i/4),k=W/fw,top=40;
- ctx.imageSmoothingEnabled=false;ctx.drawImage(IMG.floors,c*fw,r*fh+top,fw,fh-top,0,0,W,(fh-top)*k);const yy=(fh-top)*k;ctx.drawImage(IMG.floors,c*fw,r*fh+fh-50,fw,50,0,yy,W,H-yy+2);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';}
+function floorDraw(){ctx.drawImage(IMG.shop,0,0,W,H);}
 function draw(){
  ctx.setTransform(SCALE,0,0,SCALE,0,0);
  floorDraw();
  const list=[];
  const add=(k,x,y,h)=>list.push({y,fn:()=>sprFeet(k,x,y,h)});
- if(!own('chair2')){ctx.fillStyle='rgba(22,32,74,.22)';ctx.fillRect(0,695,410,212);}
- if(S.floor!==0)add('door',600,296,226);
- add('mat',600,356,44);
- drawWalls(list);
- /* ชั้นวางกรอบเรียงตามผนังซ้าย */
- add('disp2',85,395,92);if(own('disp1'))add('disp1',205,395,92);if(own('cab'))add('cab',320,395,92);if(own('glass'))add('glass',405,395,92);if(own('spin'))add('spin',455,398,92);if(own('disp4'))add('disp4',490,500,76);
- /* ห้องตรวจ 1 */
- add('chart',38,590,86);add('chair',95,628,80);
- [['auto',195,590],['phoro',245,590],['slit',295,590],['fundus',345,590],['oct',390,590]].forEach(([k,x,y])=>{if(own(k))add(k,x,y,58);});
- /* ห้องตรวจ 2 */
- if(own('chair2')){add('chart',38,785,86);add('chair',95,823,80);}
+ const on=(k,x,y,h,sy)=>list.push({y:sy,fn:()=>sprFeet(k,x,y,h)});
+ if(!own('chair2')){ctx.fillStyle='rgba(22,32,74,.25)';ctx.fillRect(60,595,415,265);}
+ /* ชั้นโชว์กรอบแยกชิ้น */
+ const sm=shMap();SHITEMS.forEach(t=>{if(sm[t[0]]!=null){const q=SHSLOTS[sm[t[0]]];add(t[1],q.x,q.y,q.y<200?116:96);}});
+ /* ห้องตรวจ */
+ add('chart',95,440,100);add('cb3',300,410,60);add('chair',170,520,92);
+ if(own('chair2')){add('chart',95,700,100);add('cb4',300,670,60);add('chair',170,780,92);}
  /* ห้องช่าง */
- add('desk2',985,385,88);add(own('edger')?'edger':'bench',860,385,own('edger')?62:52);if(own('lmeter'))add('lmeter',1095,385,62);if(own('ultra'))add('ultra',1160,385,42);if(own('uv'))add('uv',1155,425,42);
- /* มุมคอนแทค */
- if(own('ctcorner')){add('ct_kiosk',925,632,120);const cs=ctList();const sl=[[1050,575],[1100,575],[1150,575],[1050,655],[1100,655],[1150,655]];cs.forEach((k,i)=>add(CT[k].spr,sl[i][0],sl[i][1],80));}else add('ct_stand',985,620,90);
- /* เลานจ์นั่งรอ */
- add('sofa',610,592,66);if(own('seat1'))add('sofa',610,747,66);if(own('seat2')){add('arm',475,672,56);add('arm',745,672,56);}
- if(own('water'))add('water',455,850,70);if(own('plant'))add('plant',770,880,60);if(own('mirror'))add('mirror',745,500,70);
+ add('cb8',1260,305,66);
+ /* อุปกรณ์แยกชิ้นวางบนตู้ */
+ const em=eqMap();EQITEMS.forEach(t=>{if(em[t[0]]!=null){const q=EQSLOTS[em[t[0]]];const base=q.room===1?411:q.room===2?671:306;on(t[1],q.x,q.y,58,base);}});
+ /* คอนแทค */
+ if(own('ctcorner')){add('ct_kiosk',1130,197,150);const sl=[1275,1320,1365,1410,1455,1495];ctList().forEach((k,i)=>add(CT[k].spr,sl[i],192,92));}else add('ct_stand',1130,197,115);
+ /* ที่นั่งรอ */
+ add('sofa',770,430,84);if(own('seat1'))add('sofa',770,680,84);if(own('seat2')){add('arm',580,558,70);add('arm',960,558,70);}
+ if(own('water'))add('water',560,880,90);if(own('plant'))add('plant',960,880,76);if(own('mirror'))add('mirror',560,300,90);
  /* เคาน์เตอร์ */
- add(own('cnt3')?'cnt3':own('cnt2')?'cnt2':'cnt1',985,785,90);
+ const cb=own('cnt3')?'cb7':own('cnt2')?'cb6':'cb5';add(cb,1335,855,70);on('pos',1335,806,44,856);
  G.cust.forEach(c=>list.push({y:c.y,fn:()=>drawActor(c,c.k,c.fade)}));
- const p=G.player;list.push({y:p.y,fn:()=>drawActor(p,'od1',1,true)});
+ const p=G.player;list.push({y:p.y,fn:()=>drawActor(p,playerKey(),1,true)});
  G.workers.filter(w=>!isTraining(w.key)).forEach(w=>list.push({y:w.y,fn:()=>drawActor(w,w.key,1)}));
  list.sort((a,b)=>a.y-b.y).forEach(o=>o.fn());
  // labels: zones when dragging
@@ -540,28 +537,30 @@ function draw(){
  if(G.jobs.length){const j=G.jobs.filter(j=>!j.owner).length;drawIcon('ic_tool',SPOT.lab.x,SPOT.lab.y-140,36);if(j)label(SPOT.lab.x+36,SPOT.lab.y-140,String(G.jobs.length),'#f08a12','#fff');
   const active=G.jobs.find(j=>j.owner);if(active)bar(SPOT.lab.x-40,SPOT.lab.y-115,80,8,active.t/active.dur,'#2f9e3f');}
  // HUD labels of stations
- [[250,300,'ชั้นวางกรอบ'],[985,300,'ห้องช่าง'],[210,478,'ห้องตรวจ 1'],[610,465,'ที่นั่งรอ'],[925,495,'มุมคอนแทคเลนส์'],[985,678,'เคาน์เตอร์'],[210,668,own('chair2')?'ห้องตรวจ 2':'ห้องตรวจ 2 · ว่าง ซื้อได้ที่ร้านค้า']].forEach(([x,y,t])=>label(x,y,t,'#16204a','#fff'));
+ label(770,20,S.shopName,'#1f3f9e','#fff',24);
+ [[270,60,'ชั้นวางกรอบ'],[1250,455,'ห้องช่าง'],[370,470,'ห้องตรวจ 1'],[350,735,own('chair2')?'ห้องตรวจ 2':'ห้องตรวจ 2 · ว่าง ซื้อได้ที่ร้านค้า'],[770,335,'ที่นั่งรอ'],[1250,60,'มุมคอนแทคเลนส์'],[1320,585,'เคาน์เตอร์']].forEach(([x,y,t])=>label(x,y,t,'#16204a','#fff'));
+ if(arrange)drawArrange();
  drawEventHud();
- G.fx.forEach(f=>{ctx.globalAlpha=clamp(f.t,0,1);label(f.x,f.y-(1.5-f.t)*22,f.text,f.col,'#fff',f.big?23:18);ctx.globalAlpha=1;});
+ G.fx.forEach(f=>{ctx.globalAlpha=clamp(f.t,0,1);label(f.x,f.y-(1.5-f.t)*22,f.text,f.col,'#fff',f.big?30:24);ctx.globalAlpha=1;});
 }
 function drawActor(a,key,alpha,isPlayer){const moving=a.moving;
  const bob=moving?Math.abs(Math.sin(a.t*11))*5:0;const lean=moving?Math.sin(a.t*11)*.05:0;
  ctx.save();ctx.globalAlpha=alpha;
  ctx.fillStyle='rgba(20,20,40,.22)';ctx.beginPath();ctx.ellipse(a.x,a.y-1,24,7,0,0,Math.PI*2);ctx.fill();
  ctx.translate(a.x,a.y);ctx.rotate(lean);
- const dir=a.dir||'f';const k=key+dir;const pos=ATLAS.pos[k];const h=key==='c10'?100:92;const w=pos[2]/pos[3]*h;
+ const dir=a.dir||'f';const k=key+dir;const pos=ATLAS.pos[k];const h=key==='c10'?116:108;const w=pos[2]/pos[3]*h;
  const flip=dir==='s'&&a.flip;
  if(flip){ctx.scale(-1,1);}
  ctx.drawImage(IMG.atlas,pos[0],pos[1],pos[2],pos[3],-w/2,-h-bob,w,h);ctx.restore();
- if(isPlayer){const t=G.player.task;if(G.player.carry)drawIcon(G.player.carry,a.x,a.y-125-bob,46);
-  ctx.fillStyle='#f6b21b';ctx.beginPath();ctx.moveTo(a.x-7,a.y-106-bob);ctx.lineTo(a.x+7,a.y-106-bob);ctx.lineTo(a.x,a.y-96-bob);ctx.fill();ctx.strokeStyle='#16204a';ctx.lineWidth=2;ctx.stroke();
-  if(t&&t.kind!=='lab'&&t.dur>1&&G.player.prog>0)bar(a.x-30,a.y-120,60,8,G.player.prog/t.dur,'#3f7be0');
-  if(G.player.tasks.length)label(a.x+30,a.y-110,'+'+G.player.tasks.length,'#f08a12','#fff',13);}
- else if(a.task&&a.task.kind!=='lab'&&a.task.dur&&a.prog>0)bar(a.x-30,a.y-120,60,8,a.prog/a.task.dur,'#3f7be0');
+ if(isPlayer){const t=G.player.task;if(G.player.carry)drawIcon(G.player.carry,a.x,a.y-142-bob,46);
+  ctx.fillStyle='#f6b21b';ctx.beginPath();ctx.moveTo(a.x-7,a.y-122-bob);ctx.lineTo(a.x+7,a.y-122-bob);ctx.lineTo(a.x,a.y-112-bob);ctx.fill();ctx.strokeStyle='#16204a';ctx.lineWidth=2;ctx.stroke();
+  if(t&&t.kind!=='lab'&&t.dur>1&&G.player.prog>0)bar(a.x-30,a.y-136,60,8,G.player.prog/t.dur,'#3f7be0');
+  if(G.player.tasks.length)label(a.x+30,a.y-126,'+'+G.player.tasks.length,'#f08a12','#fff',13);}
+ else if(a.task&&a.task.kind!=='lab'&&a.task.dur&&a.prog>0)bar(a.x-30,a.y-136,60,8,a.prog/a.task.dur,'#3f7be0');
  if(a.steps){drawCustHud(a);}
 }
 function drawCustHud(c){if(c.phase==='leaving')return;if(c.phase==='angry'){drawIcon('ic_bang',c.x,c.y-110,30);return;}
- const y=c.y-98;
+ const y=c.y-114;
  const st=step(c);let k=null;
  if(c.phase==='counter')k=G.queue[0]===c?'ic_coin':'ic_dots';
  else if(c.phase==='atChair')k='ic_clip';
@@ -569,20 +568,20 @@ function drawCustHud(c){if(c.phase==='leaving')return;if(c.phase==='angry'){draw
  else if(c.phase==='idle')k=st==='exam'?'ic_clip':st==='lens'?'ic_q':st==='frame'?'b_black':st==='pay'?'ic_coin':st==='repair'?'ic_tool':st==='contact'?'ct_case':null;
  const pulse=(c.phase==='idle'||(c.phase==='counter'&&G.queue[0]===c))&&!c.owner?1+Math.sin(c.t*5)*.06:1;
  if(k)drawIcon(k,c.x,y-14,36*pulse);
- if(c.type)label(c.x,y+22,CTYPE[c.type].tag,CTYPE[c.type].col,'#fff',12);
+ if(c.type)label(c.x,y+26,CTYPE[c.type].tag,CTYPE[c.type].col,'#fff',16);
  const col=c.pat>55?'#2f9e3f':c.pat>25?'#f08a12':'#d8324a';bar(c.x-26,y+6,52,7,c.pat/100,col);
  if(hover===c){ctx.strokeStyle='#f6b21b';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(c.x,c.y-1,30,10,0,0,Math.PI*2);ctx.stroke();}
 }
 function drawIcon(k,x,y,s){const a=ATLAS.pos[k];if(!a)return;const r=s/Math.max(a[2],a[3]);spr(k,x-a[2]*r/2,y-a[3]*r/2,a[2]*r,a[3]*r);}
 function bar(x,y,w,h,v,col){ctx.fillStyle='#16204a';ctx.fillRect(x-2,y-2,w+4,h+4);ctx.fillStyle='#fff7e6';ctx.fillRect(x,y,w,h);ctx.fillStyle=col;ctx.fillRect(x,y,w*clamp(v,0,1),h);}
-function label(x,y,t,bg,fg,size){const s=size||16;ctx.font=`500 ${s}px Mitr,"Noto Sans Thai",Tahoma,sans-serif`;const w=ctx.measureText(t).width+12;ctx.fillStyle=bg;ctx.beginPath();const h=s+9;ctx.roundRect?ctx.roundRect(x-w/2,y-h/2,w,h,5):ctx.rect(x-w/2,y-h/2,w,h);ctx.fill();ctx.fillStyle=fg;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,x,y+.5);}
+function label(x,y,t,bg,fg,size){const s=size||22;ctx.font=`500 ${s}px Mitr,"Noto Sans Thai",Tahoma,sans-serif`;const w=ctx.measureText(t).width+12;ctx.fillStyle=bg;ctx.beginPath();const h=s+9;ctx.roundRect?ctx.roundRect(x-w/2,y-h/2,w,h,5):ctx.rect(x-w/2,y-h/2,w,h);ctx.fill();ctx.fillStyle=fg;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,x,y+.5);}
 
 /* ---------- input ---------- */
 function evPos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left-cv.clientLeft)/(r.width-2*cv.clientLeft)*W,y:(e.clientY-r.top-cv.clientTop)/(r.height-2*cv.clientTop)*H};}
-function hitCust(p){const a=[...G.cust].sort((x,y)=>y.y-x.y);return a.find(c=>c.phase!=='leaving'&&c.phase!=='angry'&&Math.abs(p.x-c.x)<34&&p.y<c.y+6&&p.y>c.y-128);}
+function hitCust(p){const a=[...G.cust].sort((x,y)=>y.y-x.y);return a.find(c=>c.phase!=='leaving'&&c.phase!=='angry'&&Math.abs(p.x-c.x)<42&&p.y<c.y+8&&p.y>c.y-150);}
 function inZone(p,z){return p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h;}
 function initInput(){
- cv.addEventListener('pointerdown',e=>{if(paused||!G)return;const p=evPos(e);if(G.mobile){mobileClick(p);return;}const c=hitCust(p);
+ cv.addEventListener('pointerdown',e=>{if(arrange){arrangeClick(evPos(e));return;}if(paused||!G)return;const p=evPos(e);if(G.mobile){mobileClick(p);return;}const c=hitCust(p);
   if(c&&c.phase==='idle'&&!c.owner&&(step(c)==='exam'||step(c)==='pay')){dragging={c,x:p.x,y:p.y,sx:p.x,sy:p.y,moved:false};cv.setPointerCapture(e.pointerId);return;}
   if(c){onCustomerClick(c);return;}
   if(inZone(p,ZONE.lab)){onLabClick();return;}
@@ -654,7 +653,7 @@ function order(id,list){const l=LENSES[id],s=lensState(id),cost=l.cost*l.pack+(l
 
 let shopTab='exam';
 function shopDialog(){
- const tabs=[['exam','เครื่องตรวจ'],['lab','ห้องช่าง'],['frame','ชั้นวางกรอบ'],['contact','คอนแทคเลนส์'],['shop','ปรับปรุงร้าน'],['floor','พื้นร้าน']];
+ const tabs=[['exam','เครื่องตรวจ'],['lab','ห้องช่าง'],['frame','ชั้นวางกรอบ'],['contact','คอนแทคเลนส์'],['shop','ปรับปรุงร้าน']];
  let body='';
  if(shopTab==='floor'){body=`<div class="grid">${FLOORS.map((n,i)=>{const o=S.floors[i];const p=i===0?0:4000+i*1800;
    return `<button class="item ${o?'owned':''}" data-floor="${i}" ${!o&&S.money<p?'disabled':''}><span class="tx"><b>${n}</b><small>${S.floor===i?'ใช้อยู่':o?'กดเพื่อใช้':'ลูกค้ารอนานขึ้น 1%'}</small></span><span class="price">${o?'':fmt(p)}</span></button>`;}).join('')}</div>`;}
@@ -670,12 +669,13 @@ function shopDialog(){
 function staffDialog(){
  const groups=['od','sales','tech'].map(r=>{const keys=Object.keys(STAFF).filter(k=>STAFF[k].role===r);const n=S.staff.filter(k=>STAFF[k].role===r).length;
   return `<h3>${ROLE[r]} <span class="mini">จ้างแล้ว ${n}/${ROLECAP[r]}</span></h3><div class="grid">${keys.map(k=>{const d=STAFF[k],h=S.staff.includes(k);
-   return `<div class="item ${h?'owned':''}">${sprHTML(k+'f',74)}<span class="tx"><b>${d.name}</b><small>เงินเดือน ${fmt(monthlySalary(k))}/เดือน · ${STAFF_YEARS[k]} ปี · เร็ว x${d.speed}${d.acc?` · แม่น ${Math.round(d.acc*100)}%`:''}</small>
-   ${h&&isTraining(k)?'<span class="tag no">หยุดงาน · กำลังอบรมหรือลาป่วย</span> ':''}${h?`<button class="btn plain" data-fire="${k}">เลิกจ้าง</button>`:`<button class="btn green" data-hire="${k}" ${S.money<d.hire||n>=ROLECAP[r]?'disabled':''}>จ้าง ${fmt(d.hire)}</button>`}</span></div>`;}).join('')}</div>`;}).join('');
+   return `<div class="item ${h?'owned':''}">${sprHTML(k+'f',74)}<span class="tx"><b>${staffNameOf(k)}</b><small>เงินเดือน ${fmt(monthlySalary(k))}/เดือน · ${STAFF_YEARS[k]} ปี · เร็ว x${d.speed}${d.acc?` · แม่น ${Math.round(d.acc*100)}%`:''}</small>
+   ${h&&isTraining(k)?'<span class="tag no">หยุดงาน · กำลังอบรมหรือลาป่วย</span> ':''}${h?`<button class="btn plain" data-rename="${k}">เปลี่ยนชื่อ</button> <button class="btn plain" data-fire="${k}">เลิกจ้าง</button>`:`<button class="btn green" data-hire="${k}" ${S.money<d.hire||n>=ROLECAP[r]?'disabled':''}>จ้าง ${fmt(d.hire)}</button>`}</span></div>`;}).join('')}</div>`;}).join('');
  openModal(`<div class="sheethead"><h2>จ้างพนักงาน</h2><span class="price">${fmt(S.money)}</span><button class="btn plain" data-c="1">ปิด</button></div>
  <p class="note">ค่าจ้างเริ่มงานจ่ายครั้งเดียว ส่วนเงินเดือนและค่าคอมจ่ายทุกสิ้นเดือน · OD วัดตา ค่าคอม 10% ของค่าตรวจ · พนักงานขายคุยเลนส์ เลือกกรอบ คิดเงิน ค่าคอม 5% · ช่างประกอบแว่น ค่าคอม ฿30 ต่องาน</p>${groups}`);
  const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;
- m.querySelectorAll('[data-hire]').forEach(b=>b.onclick=()=>{const k=b.dataset.hire,d=STAFF[k];if(S.money<d.hire)return;spend('hire',d.hire);G.today.buy+=d.hire;S.staff.push(k);addWorker(k);beep('buy');log(`${d.name} เริ่มงานแล้ว`,'g');saveGame(true);staffDialog();renderRail();});
+ m.querySelectorAll('[data-hire]').forEach(b=>b.onclick=()=>{const k=b.dataset.hire,d=STAFF[k];if(S.money<d.hire)return;if(!window.__qa)return hireDialog(k);spend('hire',d.hire);G.today.buy+=d.hire;S.staff.push(k);addWorker(k);saveGame(true);staffDialog();renderRail();});
+ m.querySelectorAll('[data-rename]').forEach(b=>b.onclick=()=>renameDialog(b.dataset.rename));
  m.querySelectorAll('[data-fire]').forEach(b=>b.onclick=()=>{const k=b.dataset.fire;S.staff=S.staff.filter(x=>x!==k);const w=G.workers.find(w=>w.key===k);if(w&&w.task){const t=w.task;if(t.c)t.c.owner=null;if(t.j)t.j.owner=null;}G.workers=G.workers.filter(w=>w.key!==k);staffDialog();renderRail();});
 }
 function endDay(){const t=G.today;const net=sumIncome(S.ledger)-sumExpense(S.ledger)-S.dayStart;
@@ -702,7 +702,7 @@ function endDay(){const t=G.today;const net=sumIncome(S.ledger)-sumExpense(S.led
 function openDay(){G.today=blankDay();G.closing=false;G.summary=false;G.spawn=2;rollRandom();refreshQuests();processAppts();renderRail();
  const sc=S.hosp.sched&&MISSION[S.hosp.sched];if(sc){if(missionReady(sc)){startMobile(sc);return;}S.hosp.sched=null;toast('ยกเลิกการออกหน่วย ทีมหรืออุปกรณ์ไม่ครบ');}
  hospitalCall();}
-function absentNote(){const a=S.staff.filter(isTraining).map(k=>`${STAFF[k].name} ${G.dayFx&&G.dayFx.sick===k?'ลาป่วย':'อบรมอีก '+((S.staffData[k].training||{}).left||0)+' วัน'}`);return a.length?`ไม่อยู่ร้าน: ${a.join(', ')} · `:'';}
+function absentNote(){const a=S.staff.filter(isTraining).map(k=>`${staffNameOf(k)} ${G.dayFx&&G.dayFx.sick===k?'ลาป่วย':'อบรมอีก '+((S.staffData[k].training||{}).left||0)+' วัน'}`);return a.length?`ไม่อยู่ร้าน: ${a.join(', ')} · `:'';}
 function afterDayMenu(){openModal(`<div class="sheethead"><h2>พร้อมเปิดร้านหรือยัง</h2></div><div class="railbtns menu"><button class="btn violet" data-a="shop">ซื้อของ</button><button class="btn green" data-a="staff">จ้างคน</button><button class="btn" data-a="train">อบรม</button><button class="btn" data-a="hoya">สั่งสินค้า</button><button class="btn" data-a="map">แผนที่</button><button class="btn red" data-a="hosp">โรงพยาบาล</button><button class="btn" data-a="acct">บัญชี</button></div><div class="row"><button class="btn gold" data-next="1">เปิดร้านวันที่ ${dayInMonth(S.day)}</button></div>`,{lock:true});
  const m=$('#modal');m.querySelector('[data-next]').onclick=()=>{closeModal();openDay();};
  const f={shop:shopDialog,staff:staffDialog,train:trainDialog,hoya:()=>hoyaDialog(),acct:accountDialog,map:mapDialog,hosp:()=>hospitalDialog()};
@@ -722,17 +722,17 @@ function renderRail(){if(!S||!G||screen!=='play')return;
  const r=$('#rail');
  if(railKey!==S.code||!r.firstChild){railKey=S.code;r.innerHTML=`<div class="card" id="rStat"></div>
  <button class="btn gold openbtn" id="rOpen" hidden></button>
- <div class="railbtns"><button class="btn violet" id="rShop">ซื้อของ</button><button class="btn green" id="rStaff">จ้างคน</button><button class="btn" id="rTrain">อบรม</button><button class="btn gold" id="rHoya">สั่งสินค้า</button><button class="btn" id="rMap">แผนที่แข่ง</button><button class="btn" id="rAcct">บัญชี</button><button class="btn" id="rTro">โทรฟี่</button><button class="btn red" id="rHosp">โรงพยาบาล</button><button class="btn" id="rSave">เซฟเกม</button><button class="btn" id="rQuest">ภารกิจ</button><button class="btn plain" id="rOpt">ตั้งค่า</button><button class="btn plain" id="rMenu">เมนูหลัก</button></div>
+ <div class="railbtns"><button class="btn violet" id="rShop">ซื้อของ</button><button class="btn green" id="rStaff">จ้างคน</button><button class="btn" id="rTrain">อบรม</button><button class="btn gold" id="rHoya">สั่งสินค้า</button><button class="btn" id="rMap">แผนที่แข่ง</button><button class="btn" id="rAcct">บัญชี</button><button class="btn" id="rTro">โทรฟี่</button><button class="btn red" id="rHosp">โรงพยาบาล</button><button class="btn" id="rSave">เซฟเกม</button><button class="btn" id="rQuest">ภารกิจ</button><button class="btn" id="rBank">ธนาคาร</button><button class="btn" id="rSt">หุ้นร้าน</button><button class="btn" id="rLay">จัดร้าน</button><button class="btn plain" id="rOpt">ตั้งค่า</button><button class="btn plain" id="rMenu">เมนูหลัก</button></div>
  <div class="card" id="rStock"></div><div class="card feed" id="rFeed" aria-live="polite"></div><div class="card mini" id="rDay"></div><div class="card mini" id="rCloud"></div><div class="mini verline">เวอร์ชัน ${GAME_VERSION}</div>`;
-  $('#rOpen').onclick=()=>{closeModal();openDay();};$('#rQuest').onclick=questDialog;$('#rHosp').onclick=()=>hospitalDialog();$('#rTrain').onclick=trainDialog;$('#rMap').onclick=mapDialog;$('#rAcct').onclick=accountDialog;$('#rTro').onclick=trophyDialog;$('#rShop').onclick=shopDialog;$('#rStaff').onclick=staffDialog;$('#rHoya').onclick=()=>hoyaDialog();$('#rSave').onclick=()=>saveGame();
+  $('#rOpen').onclick=()=>{closeModal();openDay();};$('#rQuest').onclick=questDialog;$('#rBank').onclick=bankDialog;$('#rSt').onclick=stockDialog;$('#rLay').onclick=arrangeMode;$('#rHosp').onclick=()=>hospitalDialog();$('#rTrain').onclick=trainDialog;$('#rMap').onclick=mapDialog;$('#rAcct').onclick=accountDialog;$('#rTro').onclick=trophyDialog;$('#rShop').onclick=shopDialog;$('#rStaff').onclick=staffDialog;$('#rHoya').onclick=()=>hoyaDialog();$('#rSave').onclick=()=>saveGame();
   $('#rOpt').onclick=optionDialog;$('#rMenu').onclick=()=>{saveGame(true);railKey='';showTitle();};}
  const ob=$('#rOpen');const canOpen=!!G.summary&&!G.mobile&&!G.event;ob.hidden=!canOpen;if(canOpen)ob.textContent=`เปิดร้านวันที่ ${dayInMonth(S.day)}/${MONTH_DAYS}`;
  $('#hint').textContent=hintText();
  setHTML($('#rStat'),`<div class="statrow"><span class="money">${fmt(S.money)}</span><span class="stars" title="ชื่อเสียงร้าน ${S.rep.toFixed(1)}/5">${stars()}</span></div>
- <div class="statrow mini" style="margin-top:4px"><span>เดือน ${monthOf(S.day)} วันที่ ${dayInMonth(S.day)}/${MONTH_DAYS} · รหัส ${S.code}</span><span>${G.closing?'ปิดรับลูกค้า':'เหลือ '+Math.ceil(Math.max(0,DAY_LEN-S.dayT))+' วิ'}</span></div>
+ <div class="statrow mini" style="margin-top:4px"><span>${esc(S.shopName)} · เดือน ${monthOf(S.day)} วันที่ ${dayInMonth(S.day)}/${MONTH_DAYS} · รหัส ${S.code}</span><span>${G.closing?'ปิดรับลูกค้า':'เหลือ '+Math.ceil(Math.max(0,DAY_LEN-S.dayT))+' วิ'}</span></div>
  <div class="timebar"><i style="width:${Math.min(100,S.dayT/DAY_LEN*100).toFixed(1)}%"></i></div><div class="statrow mini" style="margin-top:4px"><span>ร้าน Lv.${S.level} · EXP ${S.xp}/${xpNeed(S.level)}</span></div>${S.penalty?`<div class="penalty">ชื่อเสียงตก: ขายลดราคา ${S.penalty}% จนกว่าจะกลับถึง ${PEN_CLEAR} ดาว (ตอนนี้ ${S.rep.toFixed(1)})</div>`:''}<div class="mini">เป้าวันนี้ ${fmt(G.today.rev+G.today.tip)}/${fmt(dailyTarget())}</div>`);
  const stock=Object.keys(S.lens).filter(k=>S.lens[k].listed).map(k=>`<span class="tag ${S.lens[k].stock<=1?'no':''}">${LENSES[k].name} ${S.lens[k].stock}</span>`).join(' ');
- setHTML($('#rStock'),`<div class="mini">สต็อกเลนส์ (คู่)</div><div class="row" style="gap:4px;margin-top:4px">${stock||'<span class="mini">ยังไม่มีเลนส์</span>'}</div>${G.deliveries.length?`<div class="mini">กำลังส่ง: ${G.deliveries.map(d=>`${LENSES[d.id].name} ${Math.ceil(d.t)} วิ`).join(' · ')}</div>`:''}${apptNote()}`);
+ setHTML($('#rStock'),`<div class="mini">สต็อกเลนส์ (คู่)</div><div class="row" style="gap:4px;margin-top:4px">${stock||'<span class="mini">ยังไม่มีเลนส์</span>'}</div>${G.deliveries.length?`<div class="mini">กำลังส่ง: ${G.deliveries.map(d=>`${LENSES[d.id].name} ${Math.ceil(d.t)} วิ`).join(' · ')}</div>`:''}${apptNote()}${S.stock&&S.stock.listed?`<div class="mini">หุ้นร้าน ${fmt(S.stock.price)} · ถือ ${S.stock.mine.toLocaleString('en-US')} หุ้น</div>`:''}${S.bank.loan?`<div class="mini">หนี้ธนาคาร ${fmt(S.bank.loan)}</div>`:''}`);
  setHTML($('#rFeed'),G.feed.length?G.feed.map(f=>`<div class="${f.c||''}">${esc(f.m)}</div>`).join(''):'<div class="mini">เหตุการณ์ในร้านจะแสดงที่นี่</div>');
  setHTML($('#rCloud'),`<span class="${cloud.state==='conflict'||cloud.state==='offline'||cloud.state==='readonly'?'tag no':'tag ok'}">${cloud.label()}</span>`);
  setHTML($('#rDay'),`วันนี้ขายได้ ${fmt(G.today.rev+G.today.tip)} · บริการ ${G.today.served} คน · รอคิว ${G.cust.length} คน · พอใจเฉลี่ย ${avgSat()}% · ${G.dayNote?G.dayNote+' · ':''}${absentNote()}พนักงาน ${S.staff.length} คน · โทรฟี่ ${Object.keys(S.trophies).length}/${TROPHIES.length}`);
@@ -746,21 +746,23 @@ function conflictDialog(){cloud.conflictShown=true;const code=S.code;
  <div class="row"><button class="btn green" data-new="1">โหลดเซฟล่าสุด</button><button class="btn red" data-over="1">เซฟทับด้วยเกมนี้</button></div>`,{lock:true});
  const m=$('#modal');m.querySelector('[data-new]').onclick=async()=>{closeModal();const r=await loadGame(code);if(r==='ok'){startPlay();toast('โหลดเซฟล่าสุดแล้ว');}else{cloud.conflictShown=false;toast('โหลดไม่สำเร็จ ลองอีกครั้ง');}};
  m.querySelector('[data-over]').onclick=()=>{closeModal();saveGame(false,true);};}
-function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
+let frameErrs=0;
+function frame(ts){requestAnimationFrame(frame);try{const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
  if(screen==='play'&&S&&G&&cloud.conflict&&!cloud.conflictShown&&$('#modal').hidden)conflictDialog();
  if(screen==='play'&&S&&G&&G.mobile){if(!paused)updateMobile(dt);if(G.mobile)drawMobile();railT+=dt;if(railT>.25){railT=0;renderRail();}}
  else if(screen==='play'&&S&&G){if(!paused)update(dt);draw();railT+=dt;if(railT>.25){railT=0;renderRail();}}
- requestAnimationFrame(frame);}
+}catch(e){console.error(e);if(frameErrs++<3&&G)toast('เกิดข้อผิดพลาดเล็กน้อย เกมเล่นต่อได้');}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&S&&G)saveGame(true);});
 window.addEventListener('pagehide',()=>{if(S&&G)saveGame(true);});
 
 /* ---------- boot ---------- */
 function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 async function boot(){ATLAS=window.ATLAS_DATA;
- [IMG.atlas,IMG.floors,IMG.title,IMG.map]=await Promise.all([loadImg(window.IMG_ATLAS),loadImg(window.IMG_FLOORS),loadImg(window.IMG_TITLE),loadImg(window.IMG_MAP)]);
+ [IMG.atlas,IMG.shop,IMG.title,IMG.map]=await Promise.all([loadImg(window.IMG_ATLAS),loadImg(window.IMG_SHOP),loadImg(window.IMG_TITLE),loadImg(window.IMG_MAP)]);
  const st=document.createElement('style');st.textContent=`.spr{background-image:url(${window.IMG_ATLAS});background-repeat:no-repeat}`;document.head.appendChild(st);
+ $('#layoutBar').onclick=endArrange;
  cv=$('#stage');cv.width=W*SCALE;cv.height=H*SCALE;ctx=cv.getContext('2d');initInput();
  if(document.fonts&&document.fonts.load)document.fonts.load('500 14px Mitr').catch(()=>{});
  cloud.init();showTitle();requestAnimationFrame(frame);}
 boot();
-window.__g={makeAppt,processAppts,showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};
+window.__g={startEvent,bankDialog,stockDialog,fairPrice,stockTick,stockTrade,creditLimit,financeMonth,hireDialog,setupDialog,arrangeMode,endArrange,arrangeClick,eqMap,watchdog,mobileClick,renameDialog,staffNameOf,makeAppt,processAppts,showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};

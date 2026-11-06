@@ -3,14 +3,14 @@ const CELL=20,NCOL=Math.ceil(W/CELL),NROW=Math.ceil(H/CELL);
 function gOff(){return[0,0];}
 function applyLayout(){navKey='';}
 let navKey='',navGrid=null;
-function solidRects(){const out=[[30,368,450,30],[0,487,428,18],[0,677,428,18],[792,462,408,18],[810,672,390,18],[820,360,370,28],[870,755,230,32],[525,560,170,34],[55,605,80,24]];
- WALLS_V.forEach(([x,a,b])=>out.push([x,a,18,b-a]));
- if(own('seat1'))out.push([525,715,170,34]);if(own('chair2'))out.push([55,800,80,24]);if(own('ctcorner'))out.push([835,600,360,34],[1030,630,160,28]);return out;}
-function grid(){const k=JSON.stringify([own('ctcorner'),own('seat1'),own('chair2')]);if(k===navKey&&navGrid)return navGrid;navKey=k;const a=new Uint8Array(NCOL*NROW);
- for(let y=0;y<NROW;y++)for(let x=0;x<NCOL;x++){const px=x*CELL+CELL/2,py=y*CELL+CELL/2;if(py<305||px<18||px>W-18||py>H-4)a[y*NCOL+x]=1;}
+function solidRects(){const out=[[35,293,465,40],[475,293,25,115],[475,512,25,85],[35,552,465,42],[475,594,25,95],[475,776,25,98],[35,858,465,16],[1030,205,455,20],[1030,205,25,115],[1030,400,25,125],[1030,485,455,40],[1455,205,30,320],[1130,570,360,30],[1152,600,338,142],[1128,570,25,200],[1190,815,290,40],[670,395,200,38],[130,500,80,20],[150,372,300,38],[1090,270,340,35]];
+ if(own('seat1'))out.push([670,645,200,38]);if(own('chair2'))out.push([130,760,80,20],[150,632,300,38]);if(own('ctcorner'))out.push([1010,170,240,25]);return out;}
+function grid(){const k=JSON.stringify([own('seat1'),own('chair2'),own('ctcorner')]);if(k===navKey&&navGrid)return navGrid;navKey=k;const a=new Uint8Array(NCOL*NROW);
+ for(let y=0;y<NROW;y++)for(let x=0;x<NCOL;x++){const px=x*CELL+CELL/2,py=y*CELL+CELL/2;if(outOfShop(px,py))a[y*NCOL+x]=1;}
  solidRects().forEach(([x,y,w,h])=>{for(let cy=Math.floor(y/CELL);cy<=Math.floor((y+h)/CELL);cy++)for(let cx=Math.floor(x/CELL);cx<=Math.floor((x+w)/CELL);cx++)if(cx>=0&&cy>=0&&cx<NCOL&&cy<NROW)a[cy*NCOL+cx]=1;});
  navGrid=a;return a;}
-function freePoint(x,y){if(x<18||x>W-18||y<305||y>H-4)return false;return !solidRects().some(([a,b,w,h])=>x>=a&&x<=a+w&&y>=b&&y<=b+h);}
+function outOfShop(x,y){if(y<172||x<62||x>1484)return true;if(y>920&&!(x>590&&x<925&&y<965))return true;return false;}
+function freePoint(x,y){if(outOfShop(x,y))return false;return !solidRects().some(([a,b,w,h])=>x>=a&&x<=a+w&&y>=b&&y<=b+h);}
 function cellOf(x,y){return[clamp(Math.floor(x/CELL),0,NCOL-1),clamp(Math.floor(y/CELL),0,NROW-1)];}
 function nearestFree(c){const g=grid();if(!g[c[1]*NCOL+c[0]])return c;for(let r=1;r<14;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const x=c[0]+dx,y=c[1]+dy;if(x>=0&&y>=0&&x<NCOL&&y<NROW&&!g[y*NCOL+x])return[x,y];}return c;}
 function findPath(sx,sy,tx,ty){const g=grid(),s=nearestFree(cellOf(sx,sy)),t=nearestFree(cellOf(tx,ty));const si=s[1]*NCOL+s[0],ti=t[1]*NCOL+t[0];if(si===ti)return[];
@@ -96,7 +96,7 @@ function questDialog(){openModal(`<div class="sheethead"><h2>ภารกิจ�
 function incident(n){n=Math.round(n/100)*100;spend('incident',n);return n;}
 const RANDOM=[
  {id:'machine',spr:'ev_machine',bad:1,title:'เครื่องตรวจสายตาเสีย',say:'เครื่องตรวจขัดข้องกลางวัน ต้องตัดสินใจว่าจะซ่อมทันทีไหม',choices:[{t:'เรียกช่างซ่อมด่วน',cost:()=>6000+S.day*200,done:'ซ่อมเสร็จแล้ว ตรวจได้ตามปกติ'},{t:'ทำต่อแบบช้าลง',done:'วันนี้ตรวจสายตาช้าลง 50%',fx:{exam:1.5}}]},
- {id:'sick',spr:'ev_sick',bad:1,title:'พนักงานลาป่วย',when:()=>S.staff.length>0,say:()=>`${STAFF[G.evStaff=pick(S.staff)].name} ไม่สบาย ขอลาป่วยวันนี้`,choices:[{t:'จ้างคนมาแทนวันนี้',cost:()=>STAFF[G.evStaff].salary*1.5,done:'มีคนมาทำงานแทนแล้ว'},{t:'ทำงานโดยไม่มีคนแทน',done:'วันนี้มีคนในร้านน้อยลง 1 คน',run:()=>{G.dayFx.sick=G.evStaff;}}]},
+ {id:'sick',spr:'ev_sick',bad:1,title:'พนักงานลาป่วย',when:()=>S.staff.length>0,say:()=>`${staffNameOf(G.evStaff=pick(S.staff))} ไม่สบาย ขอลาป่วยวันนี้`,choices:[{t:'จ้างคนมาแทนวันนี้',cost:()=>STAFF[G.evStaff].salary*1.5,done:'มีคนมาทำงานแทนแล้ว'},{t:'ทำงานโดยไม่มีคนแทน',done:'วันนี้มีคนในร้านน้อยลง 1 คน',run:()=>{G.dayFx.sick=G.evStaff;}}]},
  {id:'stock',spr:'ev_stock',bad:1,title:'สินค้าขายดีหมดสต็อก',say:'เลนส์ราคาประหยัดและกรอบพื้นฐานใกล้หมด ชั้นวางเริ่มโล่ง',run:()=>{lensState('hilux').stock=Math.min(lensState('hilux').stock,1);S.frames.basic=Math.min(frameStock('basic'),1);},choices:[{t:'สั่งด่วนเพิ่มราคา',cost:()=>4500,done:'ได้สินค้าเพิ่มทันที เลนส์ 5 คู่ กรอบ 5 ชิ้น',run:()=>{lensState('hilux').stock+=5;S.frames.basic+=5;}},{t:'ไว้สั่งเองทีหลัง',done:'อย่าลืมกดสั่งสินค้าก่อนของหมด'}]},
  {id:'vip',spr:'ev_vip',title:'ลูกค้า VIP เดินเข้าร้าน',say:'ลูกค้าคนสำคัญกำลังมา ถ้าดูแลดี จะจ่ายแพงขึ้นและให้ทิปเยอะ',choices:[{t:'รับทราบ',done:'ลูกค้า VIP กำลังเดินเข้าร้าน',run:()=>{G.forceVip=1;G.spawn=.5;}}]},
  {id:'rival',spr:'ev_rival',bad:1,title:'คู่แข่งจัดโปรโมชัน',say:'ร้านคู่แข่งลดราคาแรง ลูกค้าอาจเข้าร้านเราน้อยลงวันนี้',choices:[{t:'ลงโฆษณาสู้',cost:()=>3000+S.day*150,done:'ลูกค้ายังเข้าร้านตามปกติ'},{t:'ไม่สู้ราคา',done:'วันนี้ลูกค้าเข้าร้านน้อยลง',fx:{spawn:1.4}}]},
@@ -178,12 +178,6 @@ const PEN_RULE=[[1.4,30],[1.9,20],[2.4,10]],PEN_CLEAR=3;
 function updatePenalty(){let p=S.penalty||0;if(S.rep>=PEN_CLEAR)p=0;else{const r=PEN_RULE.find(x=>S.rep<x[0]);if(r&&r[1]>p)p=r[1];}
  if(p!==(S.penalty||0)){const up=p>(S.penalty||0);S.penalty=p;if(up){softPlay('bad');toast(`ชื่อเสียงตก! ขายได้ราคาลดลง ${p}% จนกว่าชื่อเสียงจะกลับถึง ${PEN_CLEAR} ดาว`);log(`โดนลดราคาขาย ${p}%`,'r');}else{softPlay('buy');toast('ชื่อเสียงกลับมาแล้ว ขายราคาปกติ');log('ราคาขายกลับเป็นปกติ','g');}renderRail();}}
 
-/* ---------- ผังร้าน: ห้องและกำแพง ---------- */
-const WALLS_H=[[0,505,428],[0,695,428],[792,480,408],[810,690,390]];
-const WALLS_V=[[410,505,590],[410,665,790],[410,865,907],[792,296,380],[792,440,480]];
-function drawWalls(list){WALLS_H.forEach(([x,y,w])=>{const low=y===690;list.push({y,fn:()=>{const f=low?24:44;ctx.fillStyle='#16204a';ctx.fillRect(x-2,y-f-10,w+4,f+12);ctx.fillStyle='#fff4dc';ctx.fillRect(x,y-f-8,w,8);ctx.fillStyle='#ecdcbc';ctx.fillRect(x,y-f,w,f-8);ctx.fillStyle='#b98a52';ctx.fillRect(x,y-8,w,8);}});});
- WALLS_V.forEach(([x,a,b])=>{list.push({y:b,fn:()=>{ctx.fillStyle='#16204a';ctx.fillRect(x-2,a-46,22,b-a+48);ctx.fillStyle='#fff4dc';ctx.fillRect(x,a-44,18,b-a+36);ctx.fillStyle='#b98a52';ctx.fillRect(x,b-8,18,8);}});});}
-
 /* ---------- นัดลูกค้ากลับเมื่อเลนส์ไม่มีของ ---------- */
 const APPT_DAYS=3,APPT_PENALTY=.3;
 function makeAppt(c){S.appts.push({k:c.k,name:c.name,type:c.type||null,lens:c.lens,frCat:c.frCat,examLv:c.examLv,steps:c.steps.slice(c.si),bill:c.bill,sold:c.sold,comm:c.comm,sat:c.sat,q:c.q,due:S.day+APPT_DAYS});
@@ -194,3 +188,14 @@ function processAppts(){G.returning=G.returning||[];S.appts=S.appts.filter(a=>{i
  if(G.returning.length)G.spawn=Math.min(G.spawn,1);}
 function applyReturn(c,a){Object.assign(c,{steps:a.steps,si:0,lens:a.lens,frCat:a.frCat,examLv:a.examLv,bill:a.bill||[],sold:a.sold||[],comm:a.comm||0,sat:(a.sat||0)+.3,q:a.q,pat:100});G.fx.push({x:c.x,y:c.y-120,t:1.8,text:'มาตามนัด',col:'#2f9e3f'});log(`${c.name}กลับมาตามนัด`,'g');}
 function apptNote(){return S.appts.length?`<div class="mini">นัดรอเลนส์: ${S.appts.map(a=>`${LENSES[a.lens].name} อีก ${Math.max(0,a.due-S.day)} วัน`).join(' · ')}</div>`:'';}
+
+/* ---------- เปลี่ยนชื่อพนักงาน ---------- */
+function staffNameOf(k){return (S&&S.names&&S.names[k])||STAFF[k].name;}
+function renameDialog(k){const d=STAFF[k];openModal(`<div class="sheethead"><h2>เปลี่ยนชื่อพนักงาน</h2></div><div class="say">${sprHTML(k+'f',80)}<p>ชื่อเดิมตอนจ้าง: ${d.name}<br><small>${ROLE[d.role]}</small></p></div>
+ <form id="rnForm" class="row"><label class="vh" for="rnName">ชื่อใหม่</label><input id="rnName" class="nameinput" maxlength="20" autocomplete="off" placeholder="พิมพ์ชื่อใหม่"><button class="btn green">บันทึกชื่อ</button><button class="btn plain" type="button" data-c="1">ยกเลิก</button></form>
+ <p class="note">ไม่เกิน 20 ตัวอักษร ถ้าเว้นว่าง จะกลับไปใช้ชื่อเดิม</p>`,{lock:true});
+ const i=$('#rnName');i.value=(S.names&&S.names[k])||'';i.focus();
+ $('#modal [data-c]').onclick=staffDialog;
+ $('#rnForm').onsubmit=e=>{e.preventDefault();const v=i.value.replace(/[<>&"']/g,'').trim().slice(0,20);if(v)S.names[k]=v;else delete S.names[k];softPlay('ok');saveGame(true);log(`เปลี่ยนชื่อเป็น ${staffNameOf(k)} แล้ว`,'g');staffDialog();renderRail();};}
+
+function playerKey(){return S&&S.owner&&S.owner.gender==='f'?'od2':'od1';}

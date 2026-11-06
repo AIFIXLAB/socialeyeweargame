@@ -1,66 +1,17 @@
 /* ===== ธนาคารและหุ้นร้าน ===== */
-const LOAN_APR=7.5,DEP_APR=1.5; /* อัตราต่อปีที่ตั้งไว้สำหรับเกม คิดเดือนละ 1/12 */
-function creditLimit(){const h=S.history.slice(-3);const avg=h.length?h.reduce((a,x)=>a+x.income,0)/h.length:0;return Math.round((50000+S.level*10000+avg*1.5)/1000)*1000;}
 function capIn(n){S.money+=n;S.ledger.capIn=(S.ledger.capIn||0)+n;}
 function capOut(n){S.money-=n;S.ledger.capOut=(S.ledger.capOut||0)+n;}
-function financeMonth(){const b=S.bank;if(b.dep>0){const n=b.dep*DEP_APR/100/12;b.dep+=n;S.ledger.depInt=(S.ledger.depInt||0)+n;}if(b.loan>0){const n=b.loan*LOAN_APR/100/12;spend('loanInt',n);}}
-function bankDialog(){const b=S.bank,lim=creditLimit(),room=Math.max(0,lim-b.loan);const can=x=>x>0;
- const btn=(act,n,lab,ok)=>`<button class="btn ${act==='loan'?'gold':act==='repay'?'green':''}" data-b="${act}" data-n="${n}" ${ok&&n>0?'':'disabled'}>${lab}</button>`;
- const amts=[10000,50000,200000];
- openModal(`<div class="sheethead"><h2>ธนาคาร</h2><span class="price">${fmt(S.money)}</span><button class="btn plain" data-c="1">ปิด</button></div>
- <p class="note">ดอกเบี้ยคิดสิ้นเดือนในเกม: เงินกู้ ${LOAN_APR}% ต่อปี · เงินฝาก ${DEP_APR}% ต่อปี (หาร 12 ต่อเดือน) · อัตราตั้งขึ้นเพื่อเกม ไม่ใช่อัตราจริงของธนาคารใด</p>
- <div class="two"><div class="card"><h3>เงินกู้</h3><table class="ledger"><tbody><tr><td>หนี้คงเหลือ</td><td>${fmt(b.loan)}</td></tr><tr><td>วงเงินทั้งหมด</td><td>${fmt(lim)}</td></tr><tr><td>กู้เพิ่มได้</td><td>${fmt(room)}</td></tr><tr><td>ดอกเบี้ยสิ้นเดือนนี้</td><td>${fmt(b.loan*LOAN_APR/1200)}</td></tr></tbody></table>
-  <div class="row">${amts.map(n=>btn('loan',n,'กู้ '+fmt(n),S.money>=0&&room>=n)).join('')}${btn('loan',room,'กู้เต็มวงเงิน',S.money>=0)}</div>
-  <div class="row">${amts.map(n=>btn('repay',n,'คืน '+fmt(n),b.loan>=n&&S.money>=n)).join('')}${btn('repay',Math.min(b.loan,Math.max(0,S.money)),'คืนเท่าที่มี',b.loan>0&&S.money>0)}</div>
-  <p class="note">วงเงินเพิ่มตามเลเวลร้านและรายรับย้อนหลัง 3 เดือน ถ้าเงินติดลบจะกู้เพิ่มไม่ได้</p></div>
- <div class="card"><h3>เงินฝาก</h3><table class="ledger"><tbody><tr><td>ยอดฝาก</td><td>${fmt(b.dep)}</td></tr><tr><td>ดอกเบี้ยสิ้นเดือนนี้</td><td>${fmt(b.dep*DEP_APR/1200)}</td></tr></tbody></table>
-  <div class="row">${amts.map(n=>btn('dep',n,'ฝาก '+fmt(n),S.money>=n)).join('')}${btn('dep',Math.max(0,S.money),'ฝากทั้งหมด',S.money>0)}</div>
-  <div class="row">${amts.map(n=>btn('wd',n,'ถอน '+fmt(n),b.dep>=n)).join('')}${btn('wd',b.dep,'ถอนทั้งหมด',b.dep>0)}</div></div></div>`);
- const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;
- m.querySelectorAll('[data-b]').forEach(x=>x.onclick=()=>{const n=+x.dataset.n,a=x.dataset.b;
-  if(a==='loan'){b.loan+=n;capIn(n);}if(a==='repay'){b.loan=Math.max(0,b.loan-n);capOut(n);}if(a==='dep'){b.dep+=n;capOut(n);}if(a==='wd'){b.dep=Math.max(0,b.dep-n);capIn(n);}
-  softPlay('coin');saveGame(true);bankDialog();renderRail();});}
-
-const IPO_FEE=100000,IPO_LV=5,ST_SHARES=10000,ST_FLOAT=.1,ST_TRADE_FEE=.0025;
-const ST_BOTS=[{n:'คุณป้าหุ้นปันผล',v:1.2,m:0,r:.2},{n:'กองทุนสายตาไทย',v:1.6,m:.2,r:.15},{n:'เซียนหุ้นคุณค่า',v:2.4,m:-.3,r:.2},{n:'เทรดเดอร์ซิ่ง',v:.2,m:3,r:.7},{n:'นักลงทุนรายย่อย',v:.5,m:1,r:.9}];
-function monthlyOp(){const h=S.history.slice(-3);if(h.length)return h.reduce((a,x)=>a+x.profit+(x.l&&x.l.ipo||0),0)/h.length;
- const fixed=rentFee()+utilFee()+salaryFee();const d=S.daily.reduce((a,x)=>a+x.p,0);return S.daily.length?d/S.daily.length*MONTH_DAYS-fixed:0;}
-function fairPrice(){const st=S.stock;const eq=S.money+S.bank.dep-S.bank.loan-(st?st.netCash:0);const assets=Object.keys(S.owned).reduce((a,k)=>a+((SHOPBY[k]&&SHOPBY[k].price)||0)*.5,0);
- return Math.max(1,(Math.max(0,eq)*.6+assets+Math.max(-eq*.5,monthlyOp()*8)+S.rep*20000+30000)/ST_SHARES);}
-function stockTick(dt){const st=S.stock;if(!st||!st.listed)return;st.t=(st.t||0)+dt;if(st.t<4)return;st.t=0;const fair=fairPrice(),mom=st.hist.length>4?(st.price/st.hist[st.hist.length-4]-1):0;let net=0;
- ST_BOTS.forEach(b=>{if(Math.random()>b.r)return;const sig=b.v*(fair/st.price-1)+b.m*mom+rnd(-.05,.05);const q=Math.round(clamp(Math.abs(sig)*160,0,120)*rnd(.5,1));if(q<5)return;
-  const hold=st.bots[b.n]||0;if(sig>0){const take=Math.min(q,st.pool);st.bots[b.n]=hold+take;st.pool-=take;net+=q;if(take)stFeed(`${b.n} ซื้อ ${take} หุ้น`,1);else net+=0;}
-  else{const s=Math.min(q,hold);if(!s)return;st.bots[b.n]=hold-s;st.pool+=s;net-=s;stFeed(`${b.n} ขาย ${s} หุ้น`,0);}});
- st.price=Math.max(1,st.price*(1+net/ST_SHARES*1.2+rnd(-.004,.004))+(fair-st.price)*.04);st.hist.push(st.price);if(st.hist.length>60)st.hist.shift();}
-function stFeed(t,up){const f=S.stock.feed;f.unshift({t,up});if(f.length>7)f.pop();}
-function stockTrade(sell,q){const st=S.stock;q=Math.min(q,sell?st.mine:st.pool);if(q<=0)return;const impact=q/ST_SHARES*1.5;const avg=st.price*(sell?1-impact/2:1+impact/2);const amt=avg*q;const fee=amt*ST_TRADE_FEE;
- if(sell){st.mine-=q;st.pool+=q;capIn(amt-fee);st.netCash+=amt-fee;st.price*=1-impact;stFeed(`คุณขาย ${q} หุ้น ได้ ${fmt(amt-fee)}`,0);}
- else{if(S.money<amt+fee)return;st.mine+=q;st.pool-=q;capOut(amt+fee);st.netCash-=amt+fee;st.price*=1+impact;stFeed(`คุณซื้อคืน ${q} หุ้น`,1);}
- st.price=Math.max(1,st.price);st.hist.push(st.price);softPlay('coin');saveGame(true);}
-function stockDialog(){const st=S.stock;if(!st||!st.listed){const ok=S.level>=IPO_LV&&S.money>=IPO_FEE;const p=fairPrice();
-  openModal(`<div class="sheethead"><h2>เปิดหุ้นร้าน</h2><button class="btn plain" data-c="1">ปิด</button></div><p>นำ${esc(S.shopName)}เข้าตลาด มีบอทนักลงทุนมาซื้อขาย ราคาหุ้นขึ้นลงตามกำไร เงินทุน ชื่อเสียง และแรงซื้อขาย</p>
-  <table class="ledger"><tbody><tr><td>ค่าเปิดระบบ</td><td>${fmt(IPO_FEE)}</td></tr><tr><td>ต้องมีเลเวลร้าน</td><td>${IPO_LV} (ตอนนี้ ${S.level})</td></tr><tr><td>จำนวนหุ้น</td><td>${ST_SHARES.toLocaleString('en-US')} หุ้น</td></tr><tr><td>ราคาเปิดโดยประมาณ</td><td>${fmt(p)}</td></tr><tr><td>คุณถือ</td><td>${(ST_SHARES*(1-ST_FLOAT)).toLocaleString('en-US')} หุ้น</td></tr><tr><td>กระจายให้นักลงทุนตอนเปิด</td><td>${(ST_SHARES*ST_FLOAT).toLocaleString('en-US')} หุ้น</td></tr></tbody></table>
-  <div class="row"><button class="btn gold" data-ipo="1" ${ok?'':'disabled'}>จ่าย ${fmt(IPO_FEE)} เปิดหุ้น</button></div><p class="note">หุ้นและนักลงทุนเป็นระบบจำลองในเกม ไม่ใช่การลงทุนจริง</p>`);
-  const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;m.querySelector('[data-ipo]').onclick=()=>{if(S.money<IPO_FEE)return;spend('ipo',IPO_FEE);const price=fairPrice();const fl=ST_SHARES*ST_FLOAT;const bots={};ST_BOTS.forEach(b=>bots[b.n]=Math.floor(fl/ST_BOTS.length));S.stock={listed:true,price,mine:ST_SHARES-fl,pool:0,bots,netCash:0,hist:[price],feed:[],t:0};S.stock.pool=fl-Object.values(bots).reduce((a,x)=>a+x,0);toast(`หักค่าเปิดหุ้น ${fmt(IPO_FEE)} แล้ว`);softPlay('buy');log(`${S.shopName} เปิดหุ้นแล้ว`,'g');saveGame(true);stockDialog();renderRail();};return;}
- const fair=fairPrice(),val=st.mine*st.price;const first=st.hist[0];
- openModal(`<div class="sheethead"><h2>หุ้น${esc(S.shopName)}</h2><span class="price">${fmt(S.money)}</span><button class="btn plain" data-c="1">ปิด</button></div>
- <div class="monthhead"><div><small>ราคาหุ้น</small><b>${fmt(st.price)}</b></div><div><small>มูลค่าตามธุรกิจ</small><b>${fmt(fair)}</b></div><div><small>คุณถือ</small><b>${st.mine.toLocaleString('en-US')}</b></div><div><small>มูลค่าหุ้นของคุณ</small><b>${fmt(val)}</b></div></div>
- ${lineChart(st.hist.map((_,i)=>String(i+1)),[{name:'ราคาหุ้น',values:st.hist.map(x=>+x.toFixed(2))}],'ราคาหุ้น')}
- <div class="two"><div><h3>ถอนเป็นเงิน / ซื้อคืน</h3><div class="row">${[100,500,1000].map(q=>`<button class="btn green" data-sell="${q}" ${st.mine>=q?'':'disabled'}>ขาย ${q}</button>`).join('')}<button class="btn green" data-sell="${st.mine}" ${st.mine?'':'disabled'}>ขายทั้งหมด</button></div>
-  <div class="row">${[100,500].map(q=>`<button class="btn" data-buy="${q}" ${st.pool>=q&&S.money>=q*st.price*1.1?'':'disabled'}>ซื้อคืน ${q}</button>`).join('')}<span class="note">หุ้นในตลาด ${st.pool.toLocaleString('en-US')}</span></div>
-  <p class="note">ยิ่งขายทีละมาก ราคายิ่งร่วง ค่าธรรมเนียม 0.25% · เงินจากหุ้นไม่นับเป็นกำไรร้าน · ระบบจำลองในเกม ไม่ใช่การลงทุนจริง</p></div>
- <div><h3>นักลงทุนบอท</h3><div class="feed">${st.feed.map(f=>`<div class="${f.up?'g':'r'}">${esc(f.t)}</div>`).join('')||'<span class="mini">รอการซื้อขาย</span>'}</div></div></div>`,{wide:true});
- const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;wireCharts();
- m.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{stockTrade(true,+b.dataset.sell);stockDialog();renderRail();});
- m.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{stockTrade(false,+b.dataset.buy);stockDialog();renderRail();});}
-
 /* ===== ตั้งค่าเริ่มเกม ตั้งชื่อตอนจ้าง ===== */
 function cleanName(v,max){return String(v).replace(/[<>&"']/g,'').trim().slice(0,max);}
-function setupDialog(){let g=S.owner.gender;const draw=()=>{const nm=$('#suOwner')?$('#suOwner').value:S.owner.name,sh=$('#suShop')?$('#suShop').value:S.shopName;
+function setupDialog(){let g=S.owner.gender,goal=5000000;
  openModal(`<div class="sheethead"><h2>สร้างร้านของคุณ</h2></div><div class="row gpick">${[['m','od1f','ชาย'],['f','od2f','หญิง']].map(x=>`<button type="button" class="item col ${g===x[0]?'owned':''}" data-g="${x[0]}">${sprHTML(x[1],110)}<b>เจ้าของร้าน${x[2]}</b></button>`).join('')}</div>
- <form id="suForm" class="suform"><label for="suOwner">ชื่อเจ้าของร้าน</label><input id="suOwner" class="nameinput" maxlength="20" autocomplete="off"><label for="suShop">ชื่อร้าน</label><input id="suShop" class="nameinput" maxlength="24" autocomplete="off"><button class="btn gold">เริ่มเกม</button></form>`,{lock:true});
- $('#suOwner').value=nm;$('#suShop').value=sh;$('#modal').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{g=b.dataset.g;draw();});
- $('#suForm').onsubmit=e=>{e.preventDefault();S.owner={gender:g,name:cleanName($('#suOwner').value,20)||'เจ้าของร้าน'};S.shopName=cleanName($('#suShop').value,24)||'Social Eyewear';saveGame(true);closeModal();welcome();renderRail();};};draw();}
+ <form id="suForm" class="suform"><label for="suOwner">ชื่อเจ้าของร้าน</label><input id="suOwner" class="nameinput" maxlength="20" autocomplete="off" value="เจ้าของร้าน"><label for="suShop">ชื่อร้าน</label><input id="suShop" class="nameinput" maxlength="24" autocomplete="off" value="Social Eyewear">
+ <label for="suGoal">เงินถึงเท่าไหร่จึงชนะ (บาท)</label><div class="row">${[1000000,5000000,10000000,50000000].map(n=>`<button type="button" class="tab ${n===goal?'on':''}" data-goal="${n}">${fmt(n)}</button>`).join('')}<input id="suGoal" class="nameinput" type="number" min="100000" step="100000" value="${goal}"></div>
+ <button class="btn gold">เริ่มเกม</button></form>`,{lock:true});
+ const m=$('#modal');m.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{g=b.dataset.g;m.querySelectorAll('[data-g]').forEach(x=>x.classList.toggle('owned',x===b));});
+ const gi=$('#suGoal');m.querySelectorAll('[data-goal]').forEach(b=>b.onclick=()=>{gi.value=b.dataset.goal;m.querySelectorAll('[data-goal]').forEach(x=>x.classList.toggle('on',x===b));});
+ gi.oninput=()=>m.querySelectorAll('[data-goal]').forEach(x=>x.classList.toggle('on',x.dataset.goal===gi.value));
+ $('#suForm').onsubmit=e=>{e.preventDefault();S.owner={gender:g,name:cleanName($('#suOwner').value,20)||'เจ้าของร้าน'};S.shopName=cleanName($('#suShop').value,24)||'Social Eyewear';S.goal=Math.max(100000,Math.floor(+gi.value)||5000000);closeModal();startPlay(true);welcome();};}
 function hireDialog(k){const d=STAFF[k];openModal(`<div class="sheethead"><h2>จ้าง${ROLE[d.role]}</h2></div><div class="say">${sprHTML(k+'f',84)}<p>ค่าเริ่มงาน ${fmt(d.hire)} · เงินเดือน ${fmt(monthlySalary(k))}/เดือน<br><small>ตั้งชื่อพนักงานคนนี้ได้เลย</small></p></div>
  <form id="hrForm" class="row"><label class="vh" for="hrName">ชื่อพนักงาน</label><input id="hrName" class="nameinput" maxlength="20" autocomplete="off"><button class="btn green">ยืนยันจ้าง</button><button class="btn plain" type="button" data-c="1">ยกเลิก</button></form>`,{lock:true});
  const i=$('#hrName');i.value=d.name;i.select();$('#modal [data-c]').onclick=staffDialog;
@@ -125,3 +76,60 @@ function fillDialog(){const row=(kind,key,name,stock)=>`<div class="kit"><span c
  m.querySelectorAll('[data-fl]').forEach(i=>i.onchange=()=>{const[a,b]=i.dataset.fl.split('|');const v=clamp(Math.floor(+i.value)||0,0,999);i.value=v;(S.fill[a]=S.fill[a]||{})[b]=v;});
  m.querySelectorAll('[data-setall]').forEach(b=>b.onclick=()=>{m.querySelectorAll('[data-fl]').forEach(i=>{i.value=b.dataset.setall;i.onchange();});softPlay('pick');});}
 function qtyBar(){return `<div class="row qtybar"><b>จำนวนที่จะสั่ง</b>${[1,2,5,10,20].map(n=>`<button class="tab ${orderQty===n?'on':''}" data-qty="${n}">${n}</button>`).join('')}<label class="vh" for="qtyIn">ใส่จำนวนเอง</label><input class="qtyinput" id="qtyIn" type="number" min="1" max="999" value="${orderQty}"></div>`;}
+
+/* ===== ธนาคารสิ้นเดือน: ขั้นบันไดดอกเบี้ยต่อเดือน แก้ตัวเลขที่ตารางนี้ ===== */
+const DEP_TIERS=[[1000000,1],[500000,.5],[100000,.25]];
+const LOAN_TIERS=[[100000,.27],[200000,.4]];
+const LOAN_MAX=200000,WD_FEE=5000;
+function depRate(b){const t=DEP_TIERS.find(x=>b>=x[0]);return t?t[1]:0;}
+function loanRate(b){const t=LOAN_TIERS.find(x=>b<=x[0]);return t?t[1]:LOAN_TIERS[LOAN_TIERS.length-1][1];}
+function financeMonth(){const b=S.bank;if(b.dep>0){const n=b.dep*depRate(b.dep)/100;if(n){b.dep+=n;S.ledger.depInt=(S.ledger.depInt||0)+n;}}if(b.loan>0)spend('loanInt',b.loan*loanRate(b.loan)/100);}
+function netWorth(){return S.money+S.bank.dep-S.bank.loan;}
+function bankMonth(then){const b=S.bank,mo=monthOf(S.day),used=b.txM===mo;const dep=[100000,500000,1000000];const money=Math.max(0,S.money);
+ openModal(`<div class="sheethead"><h2>ธนาคารสิ้นเดือน</h2><span class="price">${fmt(S.money)}</span></div>
+ <p class="note">ฝากหรือถอนได้เดือนละ 1 รายการ เฉพาะหน้านี้ · ฝากฟรี · ถอนครั้งละ ${fmt(WD_FEE)} · ดอกเบี้ยเงินฝากต่อเดือน: ฿100,000 ขึ้นไป 0.25% · ฿500,000 ขึ้นไป 0.5% · ฿1,000,000 ขึ้นไป 1%</p>
+ <div class="two"><div class="card"><h3>เงินฝาก ${fmt(b.dep)}</h3><p class="mini">อัตราตอนนี้ ${depRate(b.dep)}% ต่อเดือน ${used?'· เดือนนี้ทำรายการแล้ว':''}</p>
+ <div class="row">${[10000,...dep].map(n=>`<button class="btn" data-dep="${n}" ${used||money<n?'disabled':''}>ฝาก ${fmt(n)}</button>`).join('')}<button class="btn" data-dep="${Math.floor(money)}" ${used||money<=0?'disabled':''}>ฝากทั้งหมด</button></div>
+ <div class="row">${[10000,...dep].map(n=>`<button class="btn plain" data-wd="${n}" ${used||b.dep<n||money+n<WD_FEE?'disabled':''}>ถอน ${fmt(n)}</button>`).join('')}<button class="btn plain" data-wd="${b.dep}" ${used||b.dep<=WD_FEE?'disabled':''}>ถอนทั้งหมด</button></div></div>
+ <div class="card"><h3>เงินกู้ ${fmt(b.loan)}</h3><p class="mini">กู้ได้ไม่เกิน ${fmt(LOAN_MAX)} ต่อครั้ง · ดอกเบี้ยต่อเดือน: ไม่เกิน ฿100,000 คิด 0.27% · เกินกว่านั้น 0.4% · ต้องคืนหมดก่อนจึงกู้ใหม่ได้</p>
+ <div class="row">${[50000,100000,200000].map(n=>`<button class="btn gold" data-loan="${n}" ${b.loan>0?'disabled':''}>กู้ ${fmt(n)}</button>`).join('')}</div>
+ <div class="row">${[10000,50000,100000].map(n=>`<button class="btn green" data-rep="${n}" ${b.loan<n||money<n?'disabled':''}>คืน ${fmt(n)}</button>`).join('')}<button class="btn green" data-rep="${Math.min(b.loan,money)}" ${b.loan<=0||money<=0?'disabled':''}>คืนเท่าที่มี</button></div></div></div>
+ <div class="row"><button class="btn gold" data-bknext="1">ไปต่อ</button></div>`,{lock:true});
+ const m=$('#modal'),re=()=>{softPlay('coin');saveGame(true);bankMonth(then);renderRail();};
+ m.querySelectorAll('[data-dep]').forEach(x=>x.onclick=()=>{const n=+x.dataset.dep;b.dep+=n;capOut(n);b.txM=mo;re();});
+ m.querySelectorAll('[data-wd]').forEach(x=>x.onclick=()=>{const n=+x.dataset.wd;b.dep=Math.max(0,b.dep-n);capIn(n);spend('incident',WD_FEE);b.txM=mo;re();});
+ m.querySelectorAll('[data-loan]').forEach(x=>x.onclick=()=>{const n=+x.dataset.loan;if(b.loan>0)return;b.loan=n;capIn(n);re();});
+ m.querySelectorAll('[data-rep]').forEach(x=>x.onclick=()=>{const n=+x.dataset.rep;b.loan=Math.max(0,b.loan-n);capOut(n);re();});
+ m.querySelector('[data-bknext]').onclick=()=>{closeModal();then();};}
+
+/* ===== การ์ดสุ่ม: เรื่องดี 10 เรื่องไม่ดี 5 เพิ่มใบใหม่ที่ตารางนี้ ===== */
+const allXp=n=>{addStaffXp('owner',n);S.staff.forEach(k=>addStaffXp(k,n));};
+const GOODC=[
+ {id:'star',spr:'t19',t:'พนักงานดีเด่น',when:()=>S.money>=5000,run:()=>{spend('incident',5000);const k=S.staff.length?pick(S.staff):'owner';addStaffXp(k,120);S.rep=clamp(S.rep+.15,1,5);return `ยอดขายดี มอบรางวัล ฿5,000 ให้${staffName(k)} ทีมมีกำลังใจ ชื่อเสียง +0.15`;}},
+ {id:'trip',spr:'t13',t:'ยอดขายครบล้าน พาทีมเที่ยว',when:()=>S.stats.total>=1000000&&S.money>=50000,run:()=>{spend('incident',50000);S.closed=2;allXp(150);S.rep=clamp(S.rep+.3,1,5);return 'จ่าย ฿50,000 ปิดร้าน 2 วันพาทีมเที่ยว พนักงานได้ EXP ชื่อเสียง +0.3';}},
+ {id:'gacha',spr:'t06',t:'สมาคมแว่นตาหมุนไข่',run:()=>{const a=['auto','phoro','slit','fundus','oct','edger','lmeter','ultra','uv'].filter(k=>!own(k));if(a.length){const k=pick(a);S.owned[k]=true;return `งานประชุมสมาคม หมุนไข่ได้ ${SHOPBY[k].name} ฟรี`;}earn('reward',20000);return 'เครื่องมือครบแล้ว รับเงินรางวัล ฿20,000 แทน';}},
+ {id:'seminar',spr:'t08',t:'จับรางวัลงานอบรมเลนส์',run:()=>{const n=pick([5000,10000]);earn('reward',n);return `ไปอบรมเลนส์แล้วจับรางวัลได้ ${fmt(n)}`;}},
+ {id:'award',spr:'t05',t:'ร้านดีเด่นประจำย่าน',run:()=>{const n=15000+S.level*500;earn('reward',n);S.rep=clamp(S.rep+.2,1,5);return `ได้รับเงินรางวัล ${fmt(n)} ชื่อเสียง +0.2`;}},
+ {id:'gift',spr:'t15',t:'บริษัทเลนส์แถมสินค้า',run:()=>{Object.keys(S.lens).filter(k=>S.lens[k].listed).forEach(k=>{S.lens[k].stock+=3;});return 'เลนส์ทุกรุ่นที่ร้านขาย เพิ่มรุ่นละ 3 คู่ฟรี';}},
+ {id:'frames',spr:'t12',t:'ตัวแทนแจกกรอบตัวอย่าง',run:()=>{Object.keys(FRAME_CATS).filter(frameUnlocked).forEach(k=>{S.frames[k]=frameStock(k)+4;});return 'กรอบทุกแบบที่มี เพิ่มแบบละ 4 ชิ้นฟรี';}},
+ {id:'news',spr:'t18',t:'สื่อมาสัมภาษณ์ร้าน',run:()=>{S.rep=clamp(S.rep+.3,1,5);S.buzz=3;return 'ชื่อเสียง +0.3 และลูกค้าเข้าเยอะขึ้น 3 วัน';}},
+ {id:'corp',spr:'t16',t:'บริษัทใหญ่สั่งแว่นยกแผนก',run:()=>{const n=20000+S.level*1000;earn('reward',n);return `ได้งานเหมา รับเงิน ${fmt(n)}`;}},
+ {id:'coach',spr:'t07',t:'วิทยากรมาสอนฟรี',run:()=>{allXp(100);addXp(150);return 'ทุกคนได้ EXP และร้านได้ EXP เพิ่ม 150';}}
+];
+const BADC=[
+ {id:'quit',spr:'ev_sick',t:'พนักงานลาออกกะทันหัน',when:()=>S.staff.length>0,run:()=>{const k=pick(S.staff);const n=staffNameOf(k);S.staff=S.staff.filter(x=>x!==k);const w=G.workers.find(x=>x.key===k);if(w&&w.task){if(w.task.c)w.task.c.owner=null;if(w.task.j)w.task.j.owner=null;}G.workers=G.workers.filter(x=>x.key!==k);return `${n} ลาออกทันที ต้องจ้างคนใหม่ถ้ายังต้องการตำแหน่งนี้`;}},
+ {id:'broken',spr:'ev_machine',t:'เครื่องมือพังเสียหาย',when:()=>['auto','phoro','slit','fundus','oct','edger','lmeter','ultra','uv'].some(own),run:()=>{const k=pick(['auto','phoro','slit','fundus','oct','edger','lmeter','ultra','uv'].filter(own));delete S.owned[k];return `${SHOPBY[k].name} พังซ่อมไม่ได้ เครื่องหายไปจากร้าน ต้องซื้อใหม่`;}},
+ {id:'leak',spr:'ev_rain',t:'ท่อน้ำแตกในร้าน',run:()=>{const n=10000+S.level*500;spend('incident',n);return `จ่ายค่าซ่อม ${fmt(n)}`;}},
+ {id:'theft',spr:'ev_stock',t:'กรอบแว่นถูกขโมย',run:()=>{Object.keys(S.frames).forEach(k=>{S.frames[k]=Math.floor(frameStock(k)/2);});return 'สต็อกกรอบหายไปครึ่งหนึ่งทุกแบบ';}},
+ {id:'fine',spr:'ev_rival',t:'รีวิวแย่และโดนปรับ',run:()=>{spend('incident',5000);S.rep=clamp(S.rep-.3,1,5);return 'จ่ายค่าปรับ ฿5,000 ชื่อเสียง -0.3';}}
+];
+function drawCard(){const bad=Math.random()<1/3;const list=(bad?BADC:GOODC).filter(c=>!c.when||c.when());const alt=GOODC.filter(c=>!c.when||c.when());return{bad:bad&&list.length>0,c:pick(list.length?list:alt)};}
+function cardDialog(title,then,force){openModal(`<div class="sheethead"><h2>เปิดการ์ด${title}</h2></div><p>เลือก 1 ใบ อาจเป็นเรื่องดีหรือไม่ดีก็ได้</p><div class="cards">${[0,1,2].map(i=>`<button class="ecard" data-flip="${i}" aria-label="การ์ดใบที่ ${i+1}">?</button>`).join('')}</div>`,{lock:true});
+ $('#modal').querySelectorAll('[data-flip]').forEach(b=>b.onclick=()=>{const d=force?{c:force,bad:BADC.includes(force)}:drawCard();const text=d.c.run();softPlay(d.bad?'bad':'buy');log(`การ์ด: ${d.c.t}`,d.bad?'r':'g');saveGame(true);renderRail();
+  openModal(`<div class="sheethead"><h2>${d.bad?'เรื่องไม่ดี':'เรื่องดี'}</h2></div><div class="say">${sprHTML(d.c.spr,110)}<p><b>${d.c.t}</b><br>${esc(text)}</p></div><div class="row"><button class="btn gold" data-cardok="1">ตกลง</button></div>`,{lock:true});$('#modal [data-cardok]').onclick=()=>{closeModal();then();};});}
+
+/* ===== เป้าหมายชนะ และความเร็วตามเลเวล ===== */
+function lvSpawn(){return 1+Math.min(S.level,60)*.012;}
+function lvPat(){return 1+Math.min(S.level,60)*.008;}
+function checkGoal(){if(!S.goal||S.won||netWorth()<S.goal||!$('#modal').hidden)return;S.won=S.day;checkTrophies();saveGame(true);softPlay('buy');
+ openModal(`<div class="sheethead"><h2>คุณชนะแล้ว!</h2></div><div class="say">${sprHTML('e_podium',110)}<p>${esc(S.shopName)} มีเงินถึงเป้าหมาย ${fmt(S.goal)} ในวันที่ ${S.day}<br>รับถ้วยรางวัล "เป้าหมายสำเร็จ"</p></div><div class="row"><button class="btn gold" data-c="1">เล่นต่อ</button></div>`,{lock:true});$('#modal [data-c]').onclick=closeModal;}

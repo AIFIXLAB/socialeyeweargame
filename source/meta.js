@@ -246,7 +246,7 @@ function monthDialog(rec,then){
  ${rec.balance<0?'<p class="err">เงินติดลบ ซื้อของไม่ได้จนกว่าจะขายจนกลับมาเป็นบวก ลองลดพนักงานเพื่อลดเงินเดือน</p>':''}
  ${ledgerTable(rec.l)}${historyBlock()}
  <div class="row"><button class="btn gold" data-ok="1">ไปต่อ</button></div>`,{lock:true,wide:true});
- $('#modal [data-ok]').onclick=()=>{closeModal();then();};wireCharts();}
+ $('#modal [data-ok]').onclick=()=>{closeModal();if(window.__qaNoCall)return then();bankMonth(()=>cardDialog('ก่อนเริ่มเดือนใหม่',then));};wireCharts();}
 
 /* ---------- โทรฟี่: เพิ่มโทรฟี่ใหม่ที่ตารางนี้ ---------- */
 const CATS=['เส้นทางเจ้าของร้าน','ยอดขายและการบริหาร','ผู้เชี่ยวชาญด้านเลนส์','การแข่งขันและการขยายร้าน','ความสำเร็จพิเศษ'];
@@ -304,7 +304,8 @@ const TROPHIES=[
  [4,'Family Optician','ให้บริการครอบครัว 20 ครอบครัว',47,'s',()=>pct(S.stats.families,20)],
  [4,'Sports Vision','ขายแว่นให้สายกีฬา 50 ชิ้น',48,'s',()=>pct(S.stats.sport,50)],
  [4,'Diamond Collector','ปลดล็อกโทรฟี่ระดับ Diamond 10 ชิ้น',49,'g',()=>pct(TROPHIES.filter(t=>t[4]==='d'&&S.trophies[t[1]]).length,10)],
- [4,'SocialEyewear Legend','ปลดล็อกโทรฟี่ครบทั้ง 49 ชิ้นก่อนหน้า',50,'l',()=>pct(Object.keys(S.trophies).filter(n=>n!=='SocialEyewear Legend'&&n!=='Mobile Eye Care').length,49)],
+ [4,'SocialEyewear Legend','ปลดล็อกโทรฟี่ครบทั้ง 49 ชิ้นก่อนหน้า',50,'l',()=>pct(Object.keys(S.trophies).filter(n=>n!=='SocialEyewear Legend'&&n!=='Mobile Eye Care'&&n!=='เป้าหมายสำเร็จ').length,49)],
+ [4,'เป้าหมายสำเร็จ','มีเงินถึงเป้าหมายที่ตั้งไว้ตอนเริ่มเกม','e_podium','l',()=>pct(S.won?1:0,1)],
  [4,'Mobile Eye Care','ออกหน่วยตรวจสายตาประชาชนสำเร็จ','h_special','g',()=>pct(S.hosp.done.m1?1:0,1)]
 ];
 function troIcon(t){return typeof t[3]==='string'?t[3]:'t'+String(t[3]).padStart(2,'0');}
@@ -322,5 +323,5 @@ function trophyDialog(){const done=Object.keys(S.trophies).length;const list=TRO
 function _trophyWallRemoved(){const names=Object.keys(S.trophies).slice(-5);names.forEach((n,i)=>{const t=TROPHIES.find(x=>x[1]===n);if(t)drawIcon(troIcon(t),640+i*48,120,44);});}
 
 /* ---------- เซฟเก่า ---------- */
-function migrate(){S.layout={};if(S.frames===undefined)S._newFrames=1;const f=fresh(S.code);Object.keys(f).forEach(k=>{if(S[k]===undefined)S[k]=f[k];});S.stats=Object.assign(f.stats,S.stats);S.ev=Object.assign(f.ev,S.ev);S.ledger=Object.assign(blankLedger(),S.ledger);if(S.stats.total===0&&S.earned)S.stats.total=S.earned;if(S._newFrames){delete S._newFrames;Object.keys(FRAME_CATS).forEach(k=>{if(frameUnlocked(k))S.frames[k]=(S.frames[k]||0)+(k==='basic'?0:6);});}
+function migrate(){S.layout={};if(S.stock&&S.stock.listed){S.money+=S.stock.mine*S.stock.price;S._refund=S.stock.mine*S.stock.price;}S.stock=null;if(S.frames===undefined)S._newFrames=1;const f=fresh(S.code);Object.keys(f).forEach(k=>{if(S[k]===undefined)S[k]=f[k];});S.stats=Object.assign(f.stats,S.stats);S.ev=Object.assign(f.ev,S.ev);S.ledger=Object.assign(blankLedger(),S.ledger);if(S.stats.total===0&&S.earned)S.stats.total=S.earned;if(S._newFrames){delete S._newFrames;Object.keys(FRAME_CATS).forEach(k=>{if(frameUnlocked(k))S.frames[k]=(S.frames[k]||0)+(k==='basic'?0:6);});}
  /* โทรฟี่ City Dominator ที่ได้จากเงื่อนไขเดิมซึ่งง่ายเกินไป */ if(S.trophies['City Dominator']&&!RIVALS.every(r=>S.ev.beat[r.id]))delete S.trophies['City Dominator'];}

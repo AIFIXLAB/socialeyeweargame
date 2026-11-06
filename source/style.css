@@ -176,3 +176,9 @@ button.mpin:hover .spr{transform:translateY(-3px)}
 
 .qtyinput{width:76px;min-height:38px;font:400 15px var(--body);border:2px solid var(--ink);border-radius:6px;padding:4px 6px;background:#fff;color:var(--ink);user-select:text;-webkit-user-select:text}
 .qtybar{background:var(--paper2);border-radius:8px;padding:6px 10px}
+
+.cards{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;padding-block:8px}
+.ecard{width:130px;height:180px;border:4px solid var(--ink);border-radius:12px;background:linear-gradient(145deg,var(--navy),var(--sky));color:#fff;font:500 56px var(--display);box-shadow:0 5px 0 var(--ink);transition:transform .1s}
+.ecard:hover{transform:translateY(-6px) rotate(-2deg)}
+.goalin{width:130px}
+@media (prefers-reduced-motion:reduce){.ecard{transition:none}}

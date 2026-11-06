@@ -182,3 +182,7 @@ button.mpin:hover .spr{transform:translateY(-3px)}
 .ecard:hover{transform:translateY(-6px) rotate(-2deg)}
 .goalin{width:130px}
 @media (prefers-reduced-motion:reduce){.ecard{transition:none}}
+
+#stage{will-change:transform}
+#rail .card{contain:content}
+.sheet{contain:content;overscroll-behavior:contain}

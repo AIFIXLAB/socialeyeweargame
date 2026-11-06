@@ -1,6 +1,6 @@
 'use strict';
 /* ===== Social Eyewear Game — ร้านแว่นตาจำลอง ===== */
-const GAME_VERSION='2.2';
+const GAME_VERSION='2.3';
 const W=1536,H=1024,SCALE=1,MW=900,MH=680;
 const $=s=>document.querySelector(s);
 const fmt=n=>'฿'+Math.round(n).toLocaleString('en-US');
@@ -147,12 +147,21 @@ function lensAvailable(id){const l=LENSES[id];return (!l.need||own(l.need))&&(!l
 
 /* ---------- sprites ---------- */
 function spr(key,dx,dy,dw,dh,flip){const a=ATLAS.pos[key];if(!a)return;
- if(flip){ctx.save();ctx.translate(dx+dw,dy);ctx.scale(-1,1);ctx.drawImage(IMG.atlas,a[0],a[1],a[2],a[3],0,0,dw,dh);ctx.restore();}
- else ctx.drawImage(IMG.atlas,a[0],a[1],a[2],a[3],dx,dy,dw,dh);}
+ if(flip){ctx.save();ctx.translate(dx+dw,dy);ctx.scale(-1,1);blit(key,a,0,0,dw,dh);ctx.restore();}
+ else blit(key,a,dx,dy,dw,dh);}
 function sprFeet(key,x,y,h,flip){const a=ATLAS.pos[key];if(!a)return;const w=a[2]/a[3]*h;spr(key,x-w/2,y-h,w,h,flip);}
-const sprCache={};
+const sprCache={},sprKeep={},BM={};
 function sprURL(key){if(sprCache[key])return sprCache[key];const a=ATLAS.pos[key];const c=document.createElement('canvas');c.width=a[2];c.height=a[3];c.getContext('2d').drawImage(IMG.atlas,a[0],a[1],a[2],a[3],0,0,a[2],a[3]);return sprCache[key]=c.toDataURL('image/png');}
-function sprHTML(key,h,cls){const a=ATLAS.pos[key];if(!a)return'';return `<img class="spr ${cls||''}" alt="" aria-hidden="true" width="${(a[2]*h/a[3]).toFixed(0)}" height="${h}" style="display:inline-block;flex:none;width:${(a[2]*h/a[3]).toFixed(1)}px;height:${h}px;max-width:none" src="${sprURL(key)}">`;}
+/* ตัดรูปล่วงหน้าทีละนิดตอนเครื่องว่าง เมนูจึงเปิดได้ทันทีไม่ต้องรอแปลงภาพ */
+let sprDone=0;
+/* แยกไปทำในเธรดเบื้องหลัง ตัวเกมจึงไม่สะดุด ถ้าเบราว์เซอร์ไม่รองรับจะตัดเมื่อต้องใช้แทน */
+async function preloadSprites(){try{if(!window.Worker||!window.OffscreenCanvas)return;
+ const src=`onmessage=async e=>{const{bm,pos}=e.data;for(const k of Object.keys(pos)){const a=pos[k];const c=new OffscreenCanvas(a[2],a[3]);c.getContext('2d').drawImage(bm,a[0],a[1],a[2],a[3],0,0,a[2],a[3]);const blob=await c.convertToBlob({type:'image/png'});const b=c.transferToImageBitmap();postMessage({k,blob,b},[b]);}postMessage({done:1});close();}`;
+ const w=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'})));const bm=await createImageBitmap(IMG.atlas);
+ w.onmessage=e=>{const d=e.data;if(d.done)return;BM[d.k]=d.b;if(!sprCache[d.k]){const u=URL.createObjectURL(d.blob);const im=new Image();im.src=u;sprCache[d.k]=u;sprKeep[d.k]=im;}sprDone++;};
+ w.onerror=()=>{};w.postMessage({bm,pos:ATLAS.pos},[bm]);}catch(e){}}
+function blit(k,a,dx,dy,dw,dh){const bm=BM[k];if(bm)ctx.drawImage(bm,dx,dy,dw,dh);else ctx.drawImage(IMG.atlas,a[0],a[1],a[2],a[3],dx,dy,dw,dh);}
+function sprHTML(key,h,cls){const a=ATLAS.pos[key];if(!a)return'';return `<img class="spr ${cls||''}" alt="" aria-hidden="true" decoding="sync" width="${(a[2]*h/a[3]).toFixed(0)}" height="${h}" style="display:inline-block;flex:none;width:${(a[2]*h/a[3]).toFixed(1)}px;height:${h}px;max-width:none" src="${sprURL(key)}">`;}
 
 /* ---------- audio ---------- */
 function beep(type){softPlay(type);}
@@ -179,20 +188,20 @@ const cloud={kind:null,db:null,ready:null,rev:0,conflict:false,conflictShown:fal
   const r=await fetch('/api/save',{method:'POST',keepalive:json.length<60000,headers:{'Content-Type':'application/json'},body:JSON.stringify({code,json,force:!!force})});
   if(r.status===409)return{conflict:true};if(!r.ok)throw new Error('http');return{ok:true};},
  async del(code){if(this.kind==='db')await this.db.doc('saves/'+code).delete();else if(this.kind==='api')await fetch('/api/save?code='+code,{method:'DELETE'});},
- send(code,obj,force){if(this.kind==='local'||!this.kind)return Promise.resolve();if(this.conflict&&!force)return Promise.resolve();
-  this.pending={code,obj,force};if(!this.busy)this.busy=this.drain().finally(()=>{this.busy=null;});return this.busy;},
+ send(code,obj,force,now){if(this.kind==='local'||!this.kind)return Promise.resolve();if(this.conflict&&!force)return Promise.resolve();
+  this.pending={code,obj,force};if(now&&this.wake)this.wake();if(!this.busy)this.busy=(now?Promise.resolve():new Promise(r=>{this.wake=r;setTimeout(r,4000);})).then(()=>{this.wake=null;return this.drain();}).finally(()=>{this.busy=null;});return this.busy;},
  async drain(){while(this.pending){const{code,obj,force}=this.pending;this.pending=null;const rev=this.rev+1;
    try{const r=await this.put(code,JSON.stringify(Object.assign({},obj,{rev})),rev,force);
     if(r.conflict){this.conflict=true;this.state='conflict';this.pending=null;return;}
     this.rev=rev;this.conflict=false;this.conflictShown=false;this.state='saved';}
    catch(e){this.state=e&&e.code==='invalid_argument'?'readonly':'offline';this.readOnly=this.state==='readonly';}}},
- flush(){return this.busy||Promise.resolve();},
+ flush(){if(this.wake)this.wake();return this.busy||Promise.resolve();},
  label(){if(this.kind==='local'||!this.kind)return'เซฟในเครื่องนี้เท่านั้น';return{conflict:'มีเครื่องอื่นเซฟรหัสนี้ใหม่กว่า',offline:'เซฟกลางไม่สำเร็จ เก็บไว้ในเครื่องก่อน',readonly:'ลิงก์นี้ดูเซฟได้ แต่บันทึกกลางไม่ได้'}[this.state]||'เซฟกลาง โหลดจากเครื่องไหนก็ได้';}
 };
 async function hasSave(code){await cloud.init();if(cloud.kind!=='local'){await cloud.flush();if(await cloud.get(code))return true;}return !!store.get(KEY(code));}
 function saveGame(quiet,force){if(!S)return false;S.savedAt=Date.now();const code=S.code,obj=JSON.parse(JSON.stringify(S));
  const ok=store.set(KEY(code),JSON.stringify(Object.assign({},obj,{rev:cloud.rev})));if(ok)store.set(LAST,code);
- const done=cloud.send(code,obj,force);
+ const done=cloud.send(code,obj,force,!quiet||!!force||document.hidden);
  if(!quiet){if(cloud.kind==='local'||!cloud.kind)toast(ok?`บันทึกในเครื่องนี้แล้ว · รหัส ${code}`:'บันทึกไม่ได้ เบราว์เซอร์นี้ปิดพื้นที่เก็บข้อมูล');
   else done.then(()=>{if(cloud.state==='saved')toast(`เซฟกลางแล้ว · ใส่รหัส ${code} โหลดได้ทุกเครื่อง`);else toast(cloud.label());});}
  return ok;}
@@ -555,7 +564,7 @@ function drawActor(a,key,alpha,isPlayer){const moving=a.moving;
  const dir=a.dir||'f';const k=key+dir;const pos=ATLAS.pos[k];const h=key==='c10'?116:108;const w=pos[2]/pos[3]*h;
  const flip=dir==='s'&&a.flip;
  if(flip){ctx.scale(-1,1);}
- ctx.drawImage(IMG.atlas,pos[0],pos[1],pos[2],pos[3],-w/2,-h-bob,w,h);ctx.restore();
+ blit(k,pos,-w/2,-h-bob,w,h);ctx.restore();
  if(isPlayer){const t=G.player.task;if(G.player.carry)drawIcon(G.player.carry,a.x,a.y-142-bob,46);
   ctx.fillStyle='#f6b21b';ctx.beginPath();ctx.moveTo(a.x-7,a.y-122-bob);ctx.lineTo(a.x+7,a.y-122-bob);ctx.lineTo(a.x,a.y-112-bob);ctx.fill();ctx.strokeStyle='#16204a';ctx.lineWidth=2;ctx.stroke();
   if(t&&t.kind!=='lab'&&t.dur>1&&G.player.prog>0)bar(a.x-30,a.y-136,60,8,G.player.prog/t.dur,'#3f7be0');
@@ -738,10 +747,10 @@ function renderRail(){if(!S||!G||screen!=='play')return;
   $('#rOpt').onclick=optionDialog;$('#rMenu').onclick=()=>{saveGame(true);railKey='';showTitle();};}
  $('#rFill').hidden=!own('autostock');
  const ob=$('#rOpen');const canOpen=!!G.summary&&!G.mobile&&!G.event;ob.hidden=!canOpen;if(canOpen)ob.textContent=`เปิดร้านวันที่ ${dayInMonth(S.day)}/${MONTH_DAYS}`;
- $('#hint').textContent=hintText();
+ const ht=hintText(),he=$('#hint');if(he.textContent!==ht)he.textContent=ht;
  setHTML($('#rStat'),`<div class="statrow"><span class="money">${fmt(S.money)}</span><span class="stars" title="ชื่อเสียงร้าน ${S.rep.toFixed(1)}/5">${stars()}</span></div>
  <div class="statrow mini" style="margin-top:4px"><span>${esc(S.shopName)} · เดือน ${monthOf(S.day)} วันที่ ${dayInMonth(S.day)}/${MONTH_DAYS} · รหัส ${S.code}</span><span>${G.closing?'ปิดรับลูกค้า':'เหลือ '+Math.ceil(Math.max(0,DAY_LEN-S.dayT))+' วิ'}</span></div>
- <div class="timebar"><i style="width:${Math.min(100,S.dayT/DAY_LEN*100).toFixed(1)}%"></i></div><div class="statrow mini" style="margin-top:4px"><span>ร้าน Lv.${S.level} · EXP ${S.xp}/${xpNeed(S.level)}</span></div>${S.penalty?`<div class="penalty">ชื่อเสียงตก: ขายลดราคา ${S.penalty}% จนกว่าจะกลับถึง ${PEN_CLEAR} ดาว (ตอนนี้ ${S.rep.toFixed(1)})</div>`:''}${S.goal?`<div class="mini">เป้าหมายชนะ ${fmt(netWorth())}/${fmt(S.goal)}${S.won?" ✓":""}</div>`:""}<div class="mini">เป้าวันนี้ ${fmt(G.today.rev+G.today.tip)}/${fmt(dailyTarget())}</div>`);
+ <div class="timebar"><i style="width:${Math.min(100,S.dayT/DAY_LEN*100).toFixed(0)}%"></i></div><div class="statrow mini" style="margin-top:4px"><span>ร้าน Lv.${S.level} · EXP ${S.xp}/${xpNeed(S.level)}</span></div>${S.penalty?`<div class="penalty">ชื่อเสียงตก: ขายลดราคา ${S.penalty}% จนกว่าจะกลับถึง ${PEN_CLEAR} ดาว (ตอนนี้ ${S.rep.toFixed(1)})</div>`:''}${S.goal?`<div class="mini">เป้าหมายชนะ ${fmt(netWorth())}/${fmt(S.goal)}${S.won?" ✓":""}</div>`:""}<div class="mini">เป้าวันนี้ ${fmt(G.today.rev+G.today.tip)}/${fmt(dailyTarget())}</div>`);
  const stock=Object.keys(S.lens).filter(k=>S.lens[k].listed).map(k=>`<span class="tag ${S.lens[k].stock<=1?'no':''}">${LENSES[k].name} ${S.lens[k].stock}</span>`).join(' ');
  setHTML($('#rStock'),`<div class="mini">สต็อกเลนส์ (คู่)</div><div class="row" style="gap:4px;margin-top:4px">${stock||'<span class="mini">ยังไม่มีเลนส์</span>'}</div>${G.deliveries.length?`<div class="mini">กำลังส่ง: ${G.deliveries.map(d=>`${LENSES[d.id].name} ${Math.ceil(d.t)} วิ`).join(' · ')}</div>`:''}${apptNote()}${S.bank.dep?`<div class="mini">เงินฝาก ${fmt(S.bank.dep)}</div>`:''}${S.bank.loan?`<div class="mini">หนี้ธนาคาร ${fmt(S.bank.loan)}</div>`:''}`);
  setHTML($('#rFeed'),G.feed.length?G.feed.map(f=>`<div class="${f.c||''}">${esc(f.m)}</div>`).join(''):'<div class="mini">เหตุการณ์ในร้านจะแสดงที่นี่</div>');
@@ -757,11 +766,12 @@ function conflictDialog(){cloud.conflictShown=true;const code=S.code;
  <div class="row"><button class="btn green" data-new="1">โหลดเซฟล่าสุด</button><button class="btn red" data-over="1">เซฟทับด้วยเกมนี้</button></div>`,{lock:true});
  const m=$('#modal');m.querySelector('[data-new]').onclick=async()=>{closeModal();const r=await loadGame(code);if(r==='ok'){startPlay();toast('โหลดเซฟล่าสุดแล้ว');}else{cloud.conflictShown=false;toast('โหลดไม่สำเร็จ ลองอีกครั้ง');}};
  m.querySelector('[data-over]').onclick=()=>{closeModal();saveGame(false,true);};}
-let frameErrs=0,idleDraw=0;
-function frame(ts){requestAnimationFrame(frame);try{const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
+let frameErrs=0,slowAvg=16,skipFrame=false,odd=false;
+function frame(ts){requestAnimationFrame(frame);try{const raw=(ts-last)||16;const dt=Math.min(.1,raw/1000);last=ts;
+ if(!skipFrame)slowAvg=slowAvg*.95+Math.min(raw,100)*.05;odd=!odd;skipFrame=slowAvg>24&&odd;
  if(screen==='play'&&S&&G&&cloud.conflict&&!cloud.conflictShown&&$('#modal').hidden)conflictDialog();
- if(screen==='play'&&S&&G&&G.mobile){if(!paused)updateMobile(dt);if(G.mobile)drawMobile();railT+=dt;if(railT>.25){railT=0;renderRail();}}
- else if(screen==='play'&&S&&G){if(!paused)update(dt);if(!paused||$('#modal').hidden||(++idleDraw%15===0))draw();railT+=dt;if(railT>.25){railT=0;renderRail();}}
+ if(screen==='play'&&S&&G&&G.mobile){if(!paused)updateMobile(dt);if(G.mobile&&$('#modal').hidden&&!skipFrame)drawMobile();railT+=dt;if(railT>.5){railT=0;renderRail();}}
+ else if(screen==='play'&&S&&G){if(!paused)update(dt);if($('#modal').hidden&&!skipFrame)draw();railT+=dt;if(railT>.5){railT=0;renderRail();}}
 }catch(e){console.error(e);if(frameErrs++<3&&G)toast('เกิดข้อผิดพลาดเล็กน้อย เกมเล่นต่อได้');}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&S&&G)saveGame(true);});
 window.addEventListener('pagehide',()=>{if(S&&G)saveGame(true);});
@@ -771,8 +781,10 @@ function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onloa
 async function boot(){ATLAS=window.ATLAS_DATA;
  [IMG.atlas,IMG.shop,IMG.title,IMG.map]=await Promise.all([loadImg(window.IMG_ATLAS),loadImg(window.IMG_SHOP),loadImg(window.IMG_TITLE),loadImg(window.IMG_MAP)]);
  $('#layoutBar').onclick=endArrange;
- cv=$('#stage');cv.width=W*SCALE;cv.height=H*SCALE;ctx=cv.getContext('2d');initInput();
+ cv=$('#stage');cv.width=W*SCALE;cv.height=H*SCALE;ctx=cv.getContext('2d',{alpha:false,desynchronized:false});initInput();
  if(document.fonts&&document.fonts.load)document.fonts.load('500 14px Mitr').catch(()=>{});
- cloud.init();showTitle();requestAnimationFrame(frame);}
+ try{IMG.shop=await createImageBitmap(IMG.shop);IMG.map.decode&&IMG.map.decode().catch(()=>{});}catch(e){}
+ delete window.IMG_ATLAS;delete window.IMG_SHOP;delete window.IMG_TITLE;delete window.IMG_MAP;
+ cloud.init();showTitle();requestAnimationFrame(frame);preloadSprites();}
 boot();
-window.__g={completeExam,fillAll,fillSummary,hospCool,startEvent,financeMonth,bankMonth,cardDialog,GOODC,BADC,checkGoal,lvSpawn,lvPat,netWorth,hireDialog,setupDialog,arrangeMode,endArrange,arrangeClick,eqMap,watchdog,mobileClick,renameDialog,staffNameOf,makeAppt,processAppts,showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};
+window.__g={sprReady:()=>sprDone,sprTotal:()=>Object.keys(ATLAS.pos).length,drawOnce:()=>draw(),completeExam,fillAll,fillSummary,hospCool,startEvent,financeMonth,bankMonth,cardDialog,GOODC,BADC,checkGoal,lvSpawn,lvPat,netWorth,hireDialog,setupDialog,arrangeMode,endArrange,arrangeClick,eqMap,watchdog,mobileClick,renameDialog,staffNameOf,makeAppt,processAppts,showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};

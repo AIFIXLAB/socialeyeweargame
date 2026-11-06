@@ -163,3 +163,5 @@ button.mpin:hover .spr{transform:translateY(-3px)}
 .ctrow .tx{flex:1;min-width:130px}.ctrow b{display:block;font:500 14px var(--display)}.ctrow small{color:var(--muted)}
 .ctpow{display:flex;flex-wrap:wrap;gap:4px}.ctpow .tab{font-size:13px;min-height:36px;padding:3px 7px;background:#fff}.ctpow .tab small{color:inherit}
 .ctpow .tab.empty{background:#efebe0;color:var(--muted)}
+
+.apptbox{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:#fff0c2;border:2px solid var(--orange);border-radius:8px;padding:8px 12px}.apptbox span{flex:1;min-width:220px}

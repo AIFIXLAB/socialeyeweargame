@@ -1,6 +1,6 @@
 'use strict';
 /* ===== Social Eyewear Game — ร้านแว่นตาจำลอง ===== */
-const GAME_VERSION='1.7';
+const GAME_VERSION='1.8';
 const W=1200,H=907,SCALE=1.5,MW=900,MH=680;
 const $=s=>document.querySelector(s);
 const fmt=n=>'฿'+Math.round(n).toLocaleString('en-US');
@@ -125,7 +125,7 @@ let dragging=null;
 let screen='title';
 let hover=null;
 
-function fresh(code){return{v:6,ct:{},penalty:0,layout:{},frames:{basic:12},rel:{},quests:{},lastRandom:0,minigame:true,kit:{},hosp:{done:{},last:{},best:{},called:{},reports:[],sched:null},rev:0,xp:0,level:1,ledger:blankLedger(),history:[],daily:[],accComm:0,dayStart:0,dayHits:0,staffData:{},areas:1,branches:[],trophies:{},ev:{beat:{},last:{},wins:0,bronze:0,silver:0,gold:0},stats:{exams:0,veryHappy:0,total:0,sales:0,lensSold:0,frameSold:0,premium:0,blue:0,kinds:{},fashion:0,sun:0,sport:0,computer:0,kids:0,seniors:0,families:0,vip:0,topItem:0,satSum:0,satN:0,dayMax:0,targetHit:0,streak:0,bestStreak:0,profitKing:0,events:0},code,money:15000,rep:3,day:1,dayT:0,owned:{},lens:{hilux:{listed:true,stock:8}},staff:[],floor:0,floors:{0:true},served:0,earned:0,sound:true};}
+function fresh(code){return{v:7,appts:[],ct:{},penalty:0,layout:{},frames:{basic:12},rel:{},quests:{},lastRandom:0,minigame:true,kit:{},hosp:{done:{},last:{},best:{},called:{},reports:[],sched:null},rev:0,xp:0,level:1,ledger:blankLedger(),history:[],daily:[],accComm:0,dayStart:0,dayHits:0,staffData:{},areas:1,branches:[],trophies:{},ev:{beat:{},last:{},wins:0,bronze:0,silver:0,gold:0},stats:{exams:0,veryHappy:0,total:0,sales:0,lensSold:0,frameSold:0,premium:0,blue:0,kinds:{},fashion:0,sun:0,sport:0,computer:0,kids:0,seniors:0,families:0,vip:0,topItem:0,satSum:0,satN:0,dayMax:0,targetHit:0,streak:0,bestStreak:0,profitKing:0,events:0},code,money:15000,rep:3,day:1,dayT:0,owned:{},lens:{hilux:{listed:true,stock:8}},staff:[],floor:0,floors:{0:true},served:0,earned:0,sound:true};}
 function newLive(){return{cust:[],jobs:[],player:{key:'od1',x:SPOT.home.x,y:SPOT.home.y,dir:'f',flip:false,tasks:[],task:null,prog:0,t:0},workers:[],deliveries:[],fx:[],spawn:3,seq:0,event:null,chairs:[null,null],queue:[],today:blankDay(),closing:false,summary:false,feed:[],seen:{},saveT:0};}
 function blankDay(){return{rev:0,lens:0,frame:0,exam:0,tip:0,cost:0,served:0,left:0,buy:0};}
 function own(id){return !!(S&&S.owned[id]);}
@@ -298,7 +298,7 @@ function maxExamLv(){let n=0;SHOP.forEach(s=>{if(s.cat==='exam'&&s.lv&&own(s.id)
 function spawnCustomer(){
  const free=[];for(let i=0;i<seatCount();i++)if(!G.cust.some(c=>c.seat===i))free.push(i);
  if(!free.length){G.today.left++;log('ที่นั่งเต็ม ลูกค้าเดินกลับไป','r');return;}
- const pool=eligibleCustomers();const t=G.forceVip?CUST.find(x=>x.type==='vip'):pick(pool.flatMap(x=>Array(1+relLv(x.k)).fill(x)));const ty=t.type&&CTYPE[t.type];
+ const pool=eligibleCustomers();const back=G.returning&&G.returning.length?G.returning.shift():null;const t=back?CUST.find(x=>x.k===back.k):G.forceVip?CUST.find(x=>x.type==='vip'):pick(pool.flatMap(x=>Array(1+relLv(x.k)).fill(x)));const ty=t.type&&CTYPE[t.type];
  const lensId=pick(t.lens.filter(l=>lensAvailable(l)).concat(t.lens.includes('hilux')?['hilux']:[]))||'hilux';
  let frCats=t.fr.filter(frameUnlocked); if(!frCats.length)frCats=['basic'];
  const frCat=Math.random()<.92?pick(frCats):pick(t.fr);
@@ -314,7 +314,7 @@ function spawnCustomer(){
  const lv=Math.floor(rnd(0,maxExamLv()+1));
  const c={id:++G.seq,k:t.k,name:t.name,x:SPOT.door.x,y:SPOT.door.y,dir:'f',flip:false,steps,si:0,lens:lensId,frCat,examLv:lv,seat:free[0],pat:100,
   rate:(100/(rnd(80,110)+Math.max(0,8-S.day)*3))/patMul()/((G.dayFx&&G.dayFx.pat)||1)*(ty?ty.rate:1),type:t.type,ctType,ctPow,vip:t.type==='vip',sold:[],comm:0,bill:[],sat:0,phase:'walk',tx:0,ty:0,fade:0,q:pick(LENS_Q[lensId]),owner:null,t:Math.random()*5};
- const seat=SEATS[c.seat];c.tx=seat.x;c.ty=seat.y;G.cust.push(c);G.forceVip=0;if(ty){toast(ty.say);G.fx.push({x:c.x,y:c.y-120,t:1.8,text:ty.tag,col:ty.col});}else if(relLv(t.k)>0)G.fx.push({x:c.x,y:c.y-110,t:1.4,text:REL[relLv(t.k)][0],col:'#6a3fc4'});beep('door');
+ if(back)applyReturn(c,back);const seat=SEATS[c.seat];c.tx=seat.x;c.ty=seat.y;G.cust.push(c);G.forceVip=0;if(ty){toast(ty.say);G.fx.push({x:c.x,y:c.y-120,t:1.8,text:ty.tag,col:ty.col});}else if(relLv(t.k)>0)G.fx.push({x:c.x,y:c.y-110,t:1.4,text:REL[relLv(t.k)][0],col:'#6a3fc4'});beep('door');
 }
 function step(c){return c.steps[c.si];}
 function sendSeat(c){const s=SEATS[c.seat];c.tx=s.x;c.ty=s.y;c.phase='walk';}
@@ -473,7 +473,7 @@ function update(dt){
  if(G.event)tickEvent(dt);
  if(!G.closing||G.event){if(!G.event)S.dayT+=dt;
   G.spawn-=dt;
-  if(G.spawn<=0&&(S.dayT<DAY_LEN||G.event)){spawnCustomer();const base=Math.max(6,17-S.day*.7-(S.rep-3)*1.4-Object.keys(S.owned).length*.12);G.spawn=(G.extra>0?(G.extra--,1.5):rnd(base*.75,base*1.25)*(G.event?.55:1)*((G.dayFx&&G.dayFx.spawn)||1));}
+  if(G.spawn<=0&&(S.dayT<DAY_LEN||G.event)){spawnCustomer();if(G.returning&&G.returning.length){G.spawn=4;return;}const base=Math.max(6,17-S.day*.7-(S.rep-3)*1.4-Object.keys(S.owned).length*.12);G.spawn=(G.extra>0?(G.extra--,1.5):rnd(base*.75,base*1.25)*(G.event?.55:1)*((G.dayFx&&G.dayFx.spawn)||1));}
   if(S.dayT>=DAY_LEN&&!G.event&&!G.closing){G.closing=true;log('ปิดรับลูกค้าใหม่ ดูแลคนที่เหลือให้เสร็จ');}
  }
  G.cust.forEach(c=>{c.t+=dt;c.fade=Math.min(1,c.fade+dt*2);
@@ -608,9 +608,11 @@ function lensDialog(c){
   :`<div class="item col off"><span class="tx"><b>${l.name}</b><small>${l.desc}</small></span><span class="row"><span class="tag no">${pending?`กำลังส่ง ${pending} คู่`:s.listed?'ของหมด':'ยังไม่มีในร้าน'}</span><button class="btn plain" data-hoya="${id}">ติดต่อ ${lensBrand(id)}</button></span></div>`;}).join('');
  openModal(`<div class="sheethead"><h2>แนะนำเลนส์</h2><button class="btn plain" data-later="1">ไว้ก่อน</button></div>
  <div class="say">${sprHTML(c.k+'f',84)}<p>${esc(c.q)}</p></div>
+ ${bestLensFor(c.lens)?'':`<div class="apptbox"><span>ร้านยังไม่มีเลนส์ที่ตรงกับลูกค้าคนนี้ นัดกลับมาได้ ถ้าครบ ${APPT_DAYS} วันแล้วยังไม่มีของ ชื่อเสียงร้านจะลดลง</span><button class="btn gold" data-appt="1">นัดอีก ${APPT_DAYS} วัน</button></div>`}
  <div class="grid">${cards}</div>
  <p class="note">แนะนำตรงอาการ ลูกค้าพอใจและให้ทิปมากขึ้น ถ้ายังไม่มีเลนส์ที่ตรง กดติดต่อบริษัทเลนส์แล้วกลับมาคุยใหม่เมื่อของถึง</p>`,{onClose:()=>{dropOwner(c,'player');}});
  const m=$('#modal');
+ const ap=m.querySelector('[data-appt]');if(ap)ap.onclick=()=>{m._o={};closeModal();makeAppt(c);};
  m.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{m._o={};closeModal();c.owner=null;chooseLens(c,b.dataset.pick);renderRail();});
  m.querySelectorAll('[data-hoya]').forEach(b=>b.onclick=()=>{m._o={};closeModal();c.owner=null;hoyaDialog(b.dataset.hoya);});
  m.querySelector('[data-later]').onclick=closeModal;
@@ -697,7 +699,7 @@ function endDay(){const t=G.today;const net=sumIncome(S.ledger)-sumExpense(S.led
  m.querySelector('[data-more]').onclick=()=>{if(rec){closeModal();monthDialog(rec,afterDayMenu);}else go();};
  renderRail();
 }
-function openDay(){G.today=blankDay();G.closing=false;G.summary=false;G.spawn=2;rollRandom();refreshQuests();renderRail();
+function openDay(){G.today=blankDay();G.closing=false;G.summary=false;G.spawn=2;rollRandom();refreshQuests();processAppts();renderRail();
  const sc=S.hosp.sched&&MISSION[S.hosp.sched];if(sc){if(missionReady(sc)){startMobile(sc);return;}S.hosp.sched=null;toast('ยกเลิกการออกหน่วย ทีมหรืออุปกรณ์ไม่ครบ');}
  hospitalCall();}
 function absentNote(){const a=S.staff.filter(isTraining).map(k=>`${STAFF[k].name} ${G.dayFx&&G.dayFx.sick===k?'ลาป่วย':'อบรมอีก '+((S.staffData[k].training||{}).left||0)+' วัน'}`);return a.length?`ไม่อยู่ร้าน: ${a.join(', ')} · `:'';}
@@ -730,7 +732,7 @@ function renderRail(){if(!S||!G||screen!=='play')return;
  <div class="statrow mini" style="margin-top:4px"><span>เดือน ${monthOf(S.day)} วันที่ ${dayInMonth(S.day)}/${MONTH_DAYS} · รหัส ${S.code}</span><span>${G.closing?'ปิดรับลูกค้า':'เหลือ '+Math.ceil(Math.max(0,DAY_LEN-S.dayT))+' วิ'}</span></div>
  <div class="timebar"><i style="width:${Math.min(100,S.dayT/DAY_LEN*100).toFixed(1)}%"></i></div><div class="statrow mini" style="margin-top:4px"><span>ร้าน Lv.${S.level} · EXP ${S.xp}/${xpNeed(S.level)}</span></div>${S.penalty?`<div class="penalty">ชื่อเสียงตก: ขายลดราคา ${S.penalty}% จนกว่าจะกลับถึง ${PEN_CLEAR} ดาว (ตอนนี้ ${S.rep.toFixed(1)})</div>`:''}<div class="mini">เป้าวันนี้ ${fmt(G.today.rev+G.today.tip)}/${fmt(dailyTarget())}</div>`);
  const stock=Object.keys(S.lens).filter(k=>S.lens[k].listed).map(k=>`<span class="tag ${S.lens[k].stock<=1?'no':''}">${LENSES[k].name} ${S.lens[k].stock}</span>`).join(' ');
- setHTML($('#rStock'),`<div class="mini">สต็อกเลนส์ (คู่)</div><div class="row" style="gap:4px;margin-top:4px">${stock||'<span class="mini">ยังไม่มีเลนส์</span>'}</div>${G.deliveries.length?`<div class="mini">กำลังส่ง: ${G.deliveries.map(d=>`${LENSES[d.id].name} ${Math.ceil(d.t)} วิ`).join(' · ')}</div>`:''}`);
+ setHTML($('#rStock'),`<div class="mini">สต็อกเลนส์ (คู่)</div><div class="row" style="gap:4px;margin-top:4px">${stock||'<span class="mini">ยังไม่มีเลนส์</span>'}</div>${G.deliveries.length?`<div class="mini">กำลังส่ง: ${G.deliveries.map(d=>`${LENSES[d.id].name} ${Math.ceil(d.t)} วิ`).join(' · ')}</div>`:''}${apptNote()}`);
  setHTML($('#rFeed'),G.feed.length?G.feed.map(f=>`<div class="${f.c||''}">${esc(f.m)}</div>`).join(''):'<div class="mini">เหตุการณ์ในร้านจะแสดงที่นี่</div>');
  setHTML($('#rCloud'),`<span class="${cloud.state==='conflict'||cloud.state==='offline'||cloud.state==='readonly'?'tag no':'tag ok'}">${cloud.label()}</span>`);
  setHTML($('#rDay'),`วันนี้ขายได้ ${fmt(G.today.rev+G.today.tip)} · บริการ ${G.today.served} คน · รอคิว ${G.cust.length} คน · พอใจเฉลี่ย ${avgSat()}% · ${G.dayNote?G.dayNote+' · ':''}${absentNote()}พนักงาน ${S.staff.length} คน · โทรฟี่ ${Object.keys(S.trophies).length}/${TROPHIES.length}`);
@@ -761,4 +763,4 @@ async function boot(){ATLAS=window.ATLAS_DATA;
  if(document.fonts&&document.fonts.load)document.fonts.load('500 14px Mitr').catch(()=>{});
  cloud.init();showTitle();requestAnimationFrame(frame);}
 boot();
-window.__g={showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};
+window.__g={makeAppt,processAppts,showRandom,setRand:v=>{RAND_ON=v;},contactDialog,chooseContact,bargainDialog,updatePenalty,CTYPE,CUST,findPath,freePoint,interact,keyMove,questDialog,rollRandom,examMinigame,refreshQuests,checkQuests,startMobile,MISSIONS,updateMobile,endMobile,finishMobile,hospitalDialog,hospitalCall,SND,openDay,get S(){return S;},get G(){return G;},onCustomerClick,toExam,toCounter,onLabClick,spawnCustomer,saveGame,loadGame,store,closeModal,update,cloud,startEvent,finishEvent,RIVALS,TROPHIES,checkTrophies,trainDialog,accountDialog,mapDialog,closeMonth,addXp,tickTraining,COURSES};

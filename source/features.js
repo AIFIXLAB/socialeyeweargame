@@ -20,7 +20,7 @@ function findPath(sx,sy,tx,ty){const g=grid(),s=nearestFree(cellOf(sx,sy)),t=nea
  const pts=raw.map(c=>{const x=c%NCOL;return{x:x*CELL+CELL/2,y:(c-x)/NCOL*CELL+CELL/2};});
  const out=[];let cur={x:sx,y:sy},i=0;while(i<pts.length){let j=pts.length-1;while(j>i&&!lineClear(cur,pts[j]))j--;out.push(pts[j]);cur=pts[j];i=j+1;}return out;}
 function lineClear(a,b){const g=grid(),d=Math.hypot(b.x-a.x,b.y-a.y),n=Math.ceil(d/8);for(let i=0;i<=n;i++){const c=cellOf(a.x+(b.x-a.x)*i/n,a.y+(b.y-a.y)*i/n);if(g[c[1]*NCOL+c[0]])return false;}return true;}
-function navWalk(e,tx,ty,speed,dt){const c=cellOf(tx,ty),key=c[0]+','+c[1];
+function navWalk(e,tx,ty,speed,dt){speed*=W/MW;const c=cellOf(tx,ty),key=c[0]+','+c[1];
  if(!e.nav||e.nav.key!==key||e.nav.grid!==navKey){e.nav={key,path:findPath(e.x,e.y,tx,ty)||[],grid:(grid(),navKey)};}
  const p=e.nav.path;if(p.length){if(walkEntity(e,p[0].x,p[0].y,speed,dt))p.shift();return false;}
  return walkEntity(e,tx,ty,speed,dt);}
@@ -36,7 +36,7 @@ document.addEventListener('keydown',e=>{if(typing(e)||!G||!S||screen!=='play')re
 document.addEventListener('keyup',e=>{const k=e.key.toLowerCase();delete KEYS[k];});
 window.addEventListener('blur',()=>{Object.keys(KEYS).forEach(k=>delete KEYS[k]);});
 function keyMove(dt){let dx=0,dy=0;Object.keys(KEYS).forEach(k=>{if(KEYMAP[k]){dx+=KEYMAP[k][0];dy+=KEYMAP[k][1];}});const p=G.player;if(!dx&&!dy){p.keying=false;return false;}
- const l=Math.hypot(dx,dy),sp=moveSpeed()*(KEYS.shift?1.5:1)*dt;const nx=p.x+dx/l*sp,ny=p.y+dy/l*sp;const stuck=!freePoint(p.x,p.y);if(stuck||freePoint(nx,p.y))p.x=nx;if(stuck||freePoint(p.x,ny))p.y=ny;
+ const l=Math.hypot(dx,dy),sp=moveSpeed()*(W/MW)*(KEYS.shift?1.5:1)*dt;const nx=p.x+dx/l*sp,ny=p.y+dy/l*sp;const stuck=!freePoint(p.x,p.y);if(stuck||freePoint(nx,p.y))p.x=nx;if(stuck||freePoint(p.x,ny))p.y=ny;
  p.moving=true;p.t=(p.t||0)+dt;p.keying=true;p.stay=true;p.nav=null;if(Math.abs(dx)>Math.abs(dy)){p.dir='s';p.flip=dx>0;}else{p.dir=dy>0?'f':'b';p.flip=false;}return true;}
 function interact(){const p=G.player;const near=[...G.cust].filter(c=>c.phase!=='leaving'&&c.phase!=='angry').sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];
  if(near&&Math.hypot(near.x-p.x,near.y-p.y)<110){onCustomerClick(near);return;}
@@ -183,3 +183,14 @@ const WALLS_H=[[0,505,428],[0,695,428],[792,480,408],[810,690,390]];
 const WALLS_V=[[410,505,590],[410,665,790],[410,865,907],[792,296,380],[792,440,480]];
 function drawWalls(list){WALLS_H.forEach(([x,y,w])=>{const low=y===690;list.push({y,fn:()=>{const f=low?24:44;ctx.fillStyle='#16204a';ctx.fillRect(x-2,y-f-10,w+4,f+12);ctx.fillStyle='#fff4dc';ctx.fillRect(x,y-f-8,w,8);ctx.fillStyle='#ecdcbc';ctx.fillRect(x,y-f,w,f-8);ctx.fillStyle='#b98a52';ctx.fillRect(x,y-8,w,8);}});});
  WALLS_V.forEach(([x,a,b])=>{list.push({y:b,fn:()=>{ctx.fillStyle='#16204a';ctx.fillRect(x-2,a-46,22,b-a+48);ctx.fillStyle='#fff4dc';ctx.fillRect(x,a-44,18,b-a+36);ctx.fillStyle='#b98a52';ctx.fillRect(x,b-8,18,8);}});});}
+
+/* ---------- นัดลูกค้ากลับเมื่อเลนส์ไม่มีของ ---------- */
+const APPT_DAYS=3,APPT_PENALTY=.3;
+function makeAppt(c){S.appts.push({k:c.k,name:c.name,type:c.type||null,lens:c.lens,frCat:c.frCat,examLv:c.examLv,steps:c.steps.slice(c.si),bill:c.bill,sold:c.sold,comm:c.comm,sat:c.sat,q:c.q,due:S.day+APPT_DAYS});
+ log(`นัด${c.name}กลับมาอีก ${APPT_DAYS} วัน`,'g');toast(`นัดแล้ว สั่งเลนส์ให้ทันภายใน ${APPT_DAYS} วัน`);c.owner=null;leave(c,true);saveGame(true);renderRail();}
+function processAppts(){G.returning=G.returning||[];S.appts=S.appts.filter(a=>{if(a.due>S.day)return true;
+ if(bestLensFor(a.lens)){G.returning.push(a);return false;}
+ S.rep=clamp(S.rep-APPT_PENALTY,1,5);log(`เลนส์ของ${a.name}ยังไม่มาตามนัด ชื่อเสียงลดลง`,'r');toast(`${a.name}ผิดหวังเพราะเลนส์ไม่มาตามนัด ชื่อเสียงลดลง`);softPlay('bad');return false;});
+ if(G.returning.length)G.spawn=Math.min(G.spawn,1);}
+function applyReturn(c,a){Object.assign(c,{steps:a.steps,si:0,lens:a.lens,frCat:a.frCat,examLv:a.examLv,bill:a.bill||[],sold:a.sold||[],comm:a.comm||0,sat:(a.sat||0)+.3,q:a.q,pat:100});G.fx.push({x:c.x,y:c.y-120,t:1.8,text:'มาตามนัด',col:'#2f9e3f'});log(`${c.name}กลับมาตามนัด`,'g');}
+function apptNote(){return S.appts.length?`<div class="mini">นัดรอเลนส์: ${S.appts.map(a=>`${LENSES[a.lens].name} อีก ${Math.max(0,a.due-S.day)} วัน`).join(' · ')}</div>`:'';}

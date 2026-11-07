@@ -206,3 +206,5 @@ button.vcard:hover{transform:translateY(-4px)}
 .gauge .zone{position:absolute;top:0;bottom:0;background:#6fd27c}.gauge .needle{position:absolute;top:0;bottom:0;width:5px;background:var(--red)}
 .axr{width:100%}
 #rail.locked .row .btn{display:inline-flex}
+
+.pcard{background:#2a1838;color:#fff;border:3px solid var(--ink);border-radius:10px;padding:16px;text-align:center}.pcard b{font:500 26px var(--display);color:#ffcf4a;display:block}.pcard p{margin:6px 0}.pcard .neg{color:#ff9aa8}.pcard small{opacity:.8}

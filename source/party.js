@@ -1,7 +1,25 @@
 /* ===== โหมด PARTY: ร้านเดียวกัน 3-5 คน เครื่องเจ้าของห้องรันเกม เครื่องอื่นต่อตรงผ่าน WebRTC ===== */
 let PT=null;
-const PROLE={od:'นักทัศนมาตร',sales:'พนักงานขาย',tech:'ช่าง'};
-const PKEYS={od:['od1','od2','od3'],sales:['sl2','sl1','sl3'],tech:['te1','te2','te3']};
+const PMAX=8,PMIN=2;
+const LOOKS={m:['od1','sl1','te1','te3','od3'],f:['od2','sl2','sl3','te2']};
+const lookOf=p=>(p&&LOOKS[p.gender==='f'?'f':'m'].includes(p.look))?p.look:LOOKS[p&&p.gender==='f'?'f':'m'][0];
+/* การ์ดอุปสรรค สุ่มทุก 3 วันก่อนเปิดร้าน มีผลถึงปิดร้านวันนั้น */
+const PCARDS=[
+ {id:'picky',spr:'ev_rush',t:'ลูกค้าช่างเลือกบุกร้าน',d:'ลูกค้าเลือกกรอบนาน 20 คนทยอยเข้ามาไม่หยุด'},
+ {id:'half',t:'รายได้หายครึ่ง',d:'เงินที่ได้จากลูกค้าถูกหัก 50% จนปิดร้าน'},
+ {id:'freeze',t:'โดนแช่แข็ง',d:'ผู้เล่นที่ถูกสุ่มทำงานไม่ได้ทั้งวัน'},
+ {id:'stock',t:'สต็อกหายครึ่ง',d:'เลนส์ กรอบ และคอนแทคเลนส์หายไปครึ่งหนึ่ง'},
+ {id:'exam',t:'คิววัดตาไม่หยุด',d:'ลูกค้ามาวัดตาอย่างเดียว และเข้าร้านถี่ขึ้นมาก'},
+ {id:'pat',t:'ลูกค้าใจร้อน',d:'เกจความอดทนลดเร็วขึ้น 2 เท่า'},
+ {id:'steal',t:'เงินถูกขโมย',d:'เงินในร้านหายไป 30%'},
+ {id:'slow',t:'ไฟตก พื้นลื่น',d:'ทุกคนเดินช้าลงครึ่งหนึ่ง'},
+ {id:'grind',t:'เครื่องฝนเลนส์รวน',d:'มินิเกมฝนเลนส์ เข็มเร็วขึ้นและช่องเขียวแคบลง'},
+ {id:'bargain',t:'วันแห่งการต่อราคา',d:'ลูกค้าทุกคนวันนี้ขอต่อราคา'},
+ {id:'truck',t:'รถขนส่งเสีย',d:'ปิดร้านวันนี้แล้วสั่งสินค้าเพิ่มไม่ได้'},
+ {id:'chart',t:'ป้ายวัดสายตาหลุด',d:'มินิเกมวัดตาไม่แสดงตัวเลข และตัวอักษรเบลอมากขึ้น'}];
+const PCARD={};PCARDS.forEach(c=>PCARD[c.id]=c);
+function truckLock(){const p=S&&S.party&&S.pcard;return !!(p&&p.id==='truck'&&(p.day===S.day||(G&&G.summary&&p.day===S.day-1)));}
+function pfx(id){return !!(S&&S.party&&S.pcard&&S.pcard.id===id&&S.pcard.day===S.day);}
 const RTC_CFG={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};
 function gatherDone(pc){return new Promise(r=>{if(pc.iceGatheringState==='complete')return r();const t=setTimeout(r,2500);pc.addEventListener('icegatheringstatechange',()=>{if(pc.iceGatheringState==='complete'){clearTimeout(t);r();}});});}
 function partyReady(){return cloud.kind==='api'&&!!window.RTCPeerConnection;}
@@ -13,7 +31,7 @@ function onMsg(id,m){if(PT.host&&id!==PT.id)return onAction(id,m);clientMsg(m);}
 /* ---------- เมนูและฟอร์ม ---------- */
 async function partyMenu(){await cloud.init();
  if(!partyReady()){openModal(`<div class="sheethead"><h2>โหมด PARTY</h2><button class="btn plain" data-c="1">ปิด</button></div><p>โหมดนี้เล่นผ่านเว็บเกมบน Vercel ที่ต่อ Upstash แล้วเท่านั้น และทุกเครื่องควรอยู่เน็ตเดียวกัน</p>`);$('#modal [data-c]').onclick=closeModal;return;}
- openModal(`<div class="sheethead"><h2>โหมด PARTY</h2><button class="btn plain" data-c="1">ปิด</button></div><div class="say">${sprHTML('btn_party',90)}<p>3-5 คนช่วยกันเปิดร้านเดียวกัน คนละตำแหน่ง ไม่มีการ์ดโจมตี ทุกเครื่องควรอยู่เน็ตเดียวกัน</p></div><div class="evchoices"><button class="btn gold" data-host="1">ตั้งห้อง</button><button class="btn green" data-join="1">เข้าห้องด้วยรหัส</button></div>`);
+ openModal(`<div class="sheethead"><h2>โหมด PARTY</h2><button class="btn plain" data-c="1">ปิด</button></div><div class="say">${sprHTML('btn_party',90)}<p>2-8 คนช่วยกันเปิดร้านเดียวกัน ทุกคนทำได้ทุกงาน ทุก 3 วันจะมีการ์ดอุปสรรคสุ่มออกมา ทุกเครื่องควรอยู่เน็ตเดียวกัน</p></div><div class="evchoices"><button class="btn gold" data-host="1">ตั้งห้อง</button><button class="btn green" data-join="1">เข้าห้องด้วยรหัส</button></div>`);
  const m=$('#modal');m.querySelector('[data-c]').onclick=closeModal;m.querySelector('[data-host]').onclick=()=>partyForm(true);m.querySelector('[data-join]').onclick=()=>partyForm(false);}
 function partyForm(host){let g='m',rule={type:'money',goal:5000000},dayLen=90;const last=store.get('socialeyewear.mp.name')||'';
  openModal(`<div class="sheethead"><h2>${host?'ตั้งห้อง PARTY':'เข้าห้อง PARTY'}</h2><button class="btn plain" data-c="1">กลับ</button></div>
@@ -36,7 +54,7 @@ function partyForm(host){let g='m',rule={type:'money',goal:5000000},dayLen=90;co
   }catch(x){err.textContent='เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง';}};}
 
 /* ---------- เชื่อมต่อ ---------- */
-function hostStart(code,id,name,g,shop,meta){partyStop();PT={host:true,code,id,name,peers:{},seen:{},meta,shop,started:meta.status==='playing',players:{[id]:{name,gender:g,role:null,conn:true}}};
+function hostStart(code,id,name,g,shop,meta){partyStop();PT={host:true,code,id,name,peers:{},seen:{},meta,shop,started:meta.status==='playing',players:{[id]:{name,gender:g,look:lookOf({gender:g}),conn:true}}};
  const sc='PT'+code,raw=store.get(KEY(sc));if(PT.started&&raw){try{const o=JSON.parse(raw);if(o.ptPlayers){PT.players=o.ptPlayers;Object.keys(PT.players).forEach(k=>{PT.players[k].conn=k===id;});}applySave(sc,raw);DAY_LEN=meta.dayLen;PT.started=true;beginGame(true);}catch(e){PT.started=false;}}
  hostSignal();PT.sigT=setInterval(()=>{hostSignal();checkPeers();},2000);if(!PT.started)lobbyShow();}
 async function hostSignal(){if(!PT||!PT.host)return;if(PT.started&&(PT.sigN=(PT.sigN||0)+1)%5)return;let st;try{st=await net.get(PT.code);}catch(e){return;}if(!PT||!st.meta)return;
@@ -60,34 +78,38 @@ function partyStop(keep){if(!PT)return;clearInterval(PT.sigT);clearInterval(PT.s
 window.addEventListener('pagehide',()=>{if(PT&&!PT.host&&PT.pc){try{PT.pc.close();}catch(e){}}});
 
 /* ---------- ล็อบบี้ ---------- */
-function canPick(r,id){const ps=PT.players,oth=Object.entries(ps).filter(([k,p])=>k!==id&&p.role);const taken=new Set(oth.map(([,p])=>p.role));return !taken.has(r)||taken.size>=3;}
-function pushLobby(){if(!PT||!PT.host)return;const m={t:'lobby',players:PT.players,code:PT.code,rule:PT.meta.rule};Object.keys(PT.peers).forEach(k=>psend(k,m));if(!PT.started)lobbyShow();}
-function lobbyShow(){const ps=PT.players,me=ps[PT.id]||{},ls=Object.entries(ps),rc=new Set(ls.map(([,p])=>p.role).filter(Boolean)),ready=ls.length>=3&&rc.size===3&&ls.every(([,p])=>p.role);
- openModal(`<div class="sheethead"><h2>ห้อง PARTY ${PT.code}</h2></div><p class="mini">บอกรหัสนี้ให้เพื่อน · 3-5 คน · สามตำแหน่งแรกห้ามซ้ำ คนที่ 4-5 เลือกซ้ำได้</p>
- <h3>เลือกตำแหน่งของคุณ</h3><div class="row">${Object.keys(PROLE).map(r=>{const ok=canPick(r,PT.id)||me.role===r;return `<button class="item col ${me.role===r?'owned':''}" data-r="${r}" ${ok?'':'disabled'}>${sprHTML(PKEYS[r][0]+'f',70)}<b>${PROLE[r]}</b></button>`;}).join('')}</div>
- <table class="ledger"><tbody>${ls.map(([k,p])=>`<tr class="${k===PT.id?'hl':''}"><td>${esc(p.name)}${k===(PT.hostId||(PT.host?PT.id:''))?' (เจ้าของห้อง)':''}</td><td>${p.role?PROLE[p.role]:'ยังไม่เลือก'}</td></tr>`).join('')}</tbody></table>
- ${PT.host?`<div class="row"><button class="btn gold" data-st="1" ${ready?'':'disabled'}>เริ่มเปิดร้าน</button><button class="btn red" data-cl="1">ปิดห้อง</button></div>${ready?'':'<p class="note">ต้องมีอย่างน้อย 3 คน และครบทั้ง 3 ตำแหน่ง</p>'}`:`<p class="note">รอเจ้าของห้องกดเริ่ม</p><div class="row"><button class="btn plain" data-lv="1">ออกจากห้อง</button></div>`}`,{lock:true});
- const m=$('#modal');m.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>toHost({a:'role',r:b.dataset.r}));
+function pushLobby(){if(!PT||!PT.host)return;const m={t:'lobby',players:PT.players,code:PT.code,hostId:PT.id};Object.keys(PT.peers).forEach(k=>psend(k,m));if(!PT.started)lobbyShow();}
+function lobbyShow(){const fe=document.activeElement,keep=fe&&fe.id==='lbName'?fe.value:null;setTimeout(()=>{if(keep!=null){const i=$('#lbName');if(i){i.value=keep;i.focus();}}});const ps=PT.players,me=ps[PT.id]||{gender:'m'},ls=Object.entries(ps),ready=ls.length>=PMIN;const hid=PT.host?PT.id:PT.hostId;const g=me.gender==='f'?'f':'m',lk=lookOf(me);
+ openModal(`<div class="sheethead"><h2>ห้อง PARTY ${PT.code}</h2></div><p class="mini">บอกรหัสนี้ให้เพื่อน · ${PMIN}-${PMAX} คน · ทุกคนทำได้ทุกงาน · ทุก 3 วันมีการ์ดอุปสรรค</p>
+ <h3>ตัวละครของคุณ</h3><div class="row"><label class="vh" for="lbName">ชื่อของคุณ</label><input id="lbName" class="nameinput" maxlength="20" autocomplete="off" value="${esc(me.name||'')}" style="max-width:220px"><button class="btn plain" data-nm="1">เปลี่ยนชื่อ</button></div>
+ <div class="row gpick">${[['m','ชาย'],['f','หญิง']].map(x=>`<button type="button" class="tab ${g===x[0]?'on':''}" data-g="${x[0]}">${x[1]}</button>`).join('')}</div>
+ <div class="row">${LOOKS[g].map(k=>`<button class="item col ${lk===k?'owned':''}" data-lk="${k}" aria-label="ชุด ${k}">${sprHTML(k+'f',64)}</button>`).join('')}</div>
+ <table class="ledger"><tbody>${ls.map(([k,p])=>`<tr class="${k===PT.id?'hl':''}"><td>${sprHTML(lookOf(p)+'f',28)} ${esc(p.name)}${k===hid?' (เจ้าของห้อง)':''}</td><td>${p.gender==='f'?'หญิง':'ชาย'}</td></tr>`).join('')}</tbody></table>
+ ${PT.host?`<div class="row"><button class="btn gold" data-st="1" ${ready?'':'disabled'}>เริ่มเปิดร้าน</button><button class="btn red" data-cl="1">ปิดห้อง</button></div>${ready?'':`<p class="note">รอเพื่อนเข้าห้องอีก ${PMIN-ls.length} คน</p>`}`:`<p class="note">รอเจ้าของห้องกดเริ่ม</p><div class="row"><button class="btn plain" data-lv="1">ออกจากห้อง</button></div>`}`,{lock:true});
+ const m=$('#modal');const prof=o=>toHost(Object.assign({a:'prof'},o));
+ m.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>prof({gender:b.dataset.g,look:LOOKS[b.dataset.g][0]}));
+ m.querySelectorAll('[data-lk]').forEach(b=>b.onclick=()=>prof({look:b.dataset.lk}));
+ m.querySelector('[data-nm]').onclick=()=>{const n=cleanName($('#lbName').value,20);if(n){store.set('socialeyewear.mp.name',n);prof({name:n});}};
  const st=m.querySelector('[data-st]');if(st)st.onclick=()=>hostBegin();const cl=m.querySelector('[data-cl]');if(cl)cl.onclick=()=>closeParty();const lv=m.querySelector('[data-lv]');if(lv)lv.onclick=()=>{partyStop();closeModal();showTitle();};}
 async function closeParty(){const code=PT.code;pcast({t:'over',closed:1,text:'เจ้าของห้องปิดห้องแล้ว'},true);try{await net.close(code);}catch(e){}partyStop();closeModal();showTitle();toast('ปิดห้องแล้ว');}
 async function hostBegin(){PT.started=true;PT.meta.status='playing';try{await net.meta(PT.code,Object.assign({code:PT.code,mode:'party',host:PT.id},PT.meta));}catch(e){}
  const me=PT.players[PT.id];S=fresh('PT'+PT.code);S.owner={gender:me.gender,name:me.name};S.shopName=PT.shop;S.party=1;S.partyDay=PT.meta.dayLen;S.goal=PT.meta.rule.type==='money'?PT.meta.rule.goal:0;S.ptPlayers=PT.players;S.lens.hilux.stock=20;S.frames.basic=20;
  closeModal();beginGame();Object.keys(PT.peers).forEach(k=>psend(k,startMsg(k)));}
-function startMsg(id){return{t:'start',role:PT.players[id].role,dayLen:S.partyDay,S:snapS()};}
-function beginGame(){S.party=1;startPlay(true);S.ptPlayers=PT.players;G.avatars=[];Object.keys(PT.players).forEach(makeAvatar);$('#rail').classList.add('locked');clearInterval(PT.snapT);PT.snapT=setInterval(hostSnap,100);mpBanner(`เปิดร้านแล้ว ตำแหน่งคุณ: ${PROLE[PT.players[PT.id].role]}`);}
-function makeAvatar(id){if(G.avatars.some(a=>a.id===id))return;const p=PT.players[id];if(!p||!p.role)return;const used=G.avatars.filter(a=>a.role===p.role).length;G.avatars.push({id,role:p.role,name:p.name,key:PKEYS[p.role][used%3],x:SPOT.home.x+used*50,y:SPOT.home.y,dir:'f',flip:false,t:0,task:null,done:0});}
+function startMsg(id){return{t:'start',dayLen:S.partyDay,S:snapS()};}
+function beginGame(){S.party=1;startPlay(true);S.ptPlayers=PT.players;G.avatars=[];Object.keys(PT.players).forEach(makeAvatar);$('#rail').classList.add('locked');clearInterval(PT.snapT);PT.snapT=setInterval(hostSnap,100);mpBanner('เปิดร้านแล้ว ทุกคนทำได้ทุกงาน');}
+function makeAvatar(id){if(G.avatars.some(a=>a.id===id))return;const p=PT.players[id];if(!p)return;const i=G.avatars.length;G.avatars.push({id,name:p.name,key:lookOf(p),x:SPOT.home.x+(i%4)*46-60,y:SPOT.home.y+Math.floor(i/4)*36,dir:'f',flip:false,t:0,task:null,done:0,frozen:0});}
 
 /* ---------- เครื่องเจ้าของห้อง: รับคำสั่ง ---------- */
 function onAction(id,m){if(!PT||!PT.host)return;const ps=PT.players;
- if(m.a==='hello'){if(ps[id]){ps[id].conn=true;ps[id].name=m.name;if(PT.started&&G&&S){makeAvatar(id);psend(id,{t:'lobby',players:ps,code:PT.code});psend(id,startMsg(id));return;}}else{if(PT.started)return psend(id,{t:'reject',why:'ห้องนี้เริ่มเล่นไปแล้ว'});if(Object.keys(ps).length>=5)return psend(id,{t:'reject',why:'ห้องเต็ม 5 คนแล้ว'});ps[id]={name:m.name,gender:m.gender,role:null,conn:true};}pushLobby();return;}
- if(m.a==='role'){if(!PT.started&&ps[id]&&canPick(m.r,id)){ps[id].role=m.r;pushLobby();}return;}
+ if(m.a==='hello'){if(ps[id]){ps[id].conn=true;ps[id].name=m.name;if(PT.started&&G&&S){makeAvatar(id);psend(id,{t:'lobby',players:ps,code:PT.code});psend(id,startMsg(id));return;}}else{if(PT.started)return psend(id,{t:'reject',why:'ห้องนี้เริ่มเล่นไปแล้ว'});if(Object.keys(ps).length>=PMAX)return psend(id,{t:'reject',why:`ห้องเต็ม ${PMAX} คนแล้ว`});ps[id]={name:m.name,gender:m.gender,look:lookOf({gender:m.gender}),conn:true};}pushLobby();return;}
+ if(m.a==='prof'){if(!PT.started&&ps[id]){const p=ps[id];if(m.gender==='m'||m.gender==='f')p.gender=m.gender;if(m.look)p.look=m.look;p.look=lookOf(p);if(m.name)p.name=cleanName(m.name,20)||p.name;pushLobby();}return;}
  if(!G||!S||!PT.started)return;const a=G.avatars.find(x=>x.id===id);if(!a)return;
  if(m.a==='claim')return claim(a,m);if(m.a==='done')return doneTask(a,m);if(m.a==='release')return relTask(a);}
 function deny(a,t){psend(a.id,{t:'toast',text:t});}
-const NEED={exam:'od',lens:'sales',frame:'sales',contact:'sales',repair:'sales',pay:'sales'};
-function claim(a,m){if(a.task)return deny(a,'ทำงานที่รับไว้ให้เสร็จก่อน');
- if(m.lab){if(a.role!=='tech')return deny(a,'โต๊ะช่างเป็นงานของช่าง');const j=G.jobs.find(j=>!j.owner);if(!j)return deny(a,'ยังไม่มีงานที่โต๊ะช่าง');j.owner='p:'+a.id;a.task={kind:'lab',j,x:SPOT.lab.x,y:SPOT.lab.y};return;}
- const c=G.cust.find(x=>x.id===m.cid);if(!c||c.owner)return deny(a,'มีคนรับลูกค้าคนนี้แล้ว');if(c.phase!=='idle'&&c.phase!=='atChair'&&c.phase!=='counter')return;const st=step(c);const need=NEED[st];if(!need)return;if(need!==a.role)return deny(a,`งานนี้ของ${PROLE[need]}`);
+const NEED={exam:1,lens:1,frame:1,contact:1,repair:1,pay:1};
+function claim(a,m){if(a.frozen===S.day)return deny(a,'คุณโดนแช่แข็ง วันนี้ทำงานไม่ได้');if(a.task)return deny(a,'ทำงานที่รับไว้ให้เสร็จก่อน');
+ if(m.lab){const j=G.jobs.find(j=>!j.owner);if(!j)return deny(a,'ยังไม่มีงานที่โต๊ะช่าง');j.owner='p:'+a.id;a.task={kind:'lab',j,x:SPOT.lab.x,y:SPOT.lab.y};return;}
+ const c=G.cust.find(x=>x.id===m.cid);if(!c||c.owner)return deny(a,'มีคนรับลูกค้าคนนี้แล้ว');if(c.phase!=='idle'&&c.phase!=='atChair'&&c.phase!=='counter')return;const st=step(c);if(!NEED[st])return;
  if(st==='exam'){if(c.phase==='idle'&&!toExam(c))return;c.owner='p:'+a.id;const ch=CHAIRS[c.chair];a.task={kind:'exam',c,x:ch.sx,y:ch.sy,ready:()=>c.phase==='atChair'};return;}
  if(st==='pay'){if(c.phase==='idle'&&!toCounter(c))return deny(a,'คิวเคาน์เตอร์เต็ม');c.owner='p:'+a.id;a.task={kind:'cash',c,x:SPOT.cash.x,y:SPOT.cash.y,ready:()=>c.phase==='counter'&&G.queue[0]===c};return;}
  c.owner='p:'+a.id;if(st==='lens')a.task={kind:'lens',c,follow:1};if(st==='repair')a.task={kind:'repair',c,follow:1};if(st==='frame')a.task={kind:'frame',c,x:SPOT.frames.x,y:SPOT.frames.y};if(st==='contact')a.task={kind:'contact',c,x:SPOT.contact.x,y:SPOT.contact.y};}
@@ -106,22 +128,23 @@ function doneTask(a,m){const t=a.task;if(!t||t.kind!==m.kind)return;const c=t.c;
  if(t.kind==='frame'){if(frameStock(m.cat)<1){t.opened=false;deny(a,'กรอบนี้หมดแล้ว');return;}a.task={kind:'dlvF',c,cat:m.cat,follow:1,auto:1};return;}
  if(t.kind==='contact'){if(ctStock(m.ctk,m.pow)<1){t.opened=false;deny(a,'คอนแทคนี้หมดแล้ว');return;}a.task={kind:'dlvC',c,ctk:m.ctk,pow:m.pow,follow:1,auto:1};return;}
  if(t.kind==='cash'){c.deal=m.deal==null?0:m.deal;completeCash(c);return finishWork(a);}}
-function partyTick(dt){const sp=moveSpeed()*(W/MW);G.avatars.forEach(a=>{const t=a.task;if(!t){a.moving=false;return;}
+function partyTick(dt){const sp=moveSpeed()*(W/MW)*(pfx('slow')?.5:1);burstTick(dt);G.avatars.forEach(a=>{const t=a.task;if(!t){a.moving=false;return;}
   if(t.c&&(!G.cust.includes(t.c)||t.c.phase==='leaving'||t.c.phase==='angry')){psend(a.id,{t:'cancel'});relTask(a);return;}if(t.j&&!G.jobs.includes(t.j)){psend(a.id,{t:'cancel'});relTask(a);return;}
   if(t.opened)return;const tx=t.follow?t.c.x+50:t.x,ty=t.follow?t.c.y+6:t.y;if(!navWalk(a,tx,ty,sp,dt))return;a.moving=false;if(t.ready&&!t.ready())return;
   if(t.kind==='repair'){startRepair(t.c);return finishWork(a);}if(t.kind==='dlvF'){chooseFrame(t.c,t.cat);return finishWork(a);}if(t.kind==='dlvC'){chooseContact(t.c,t.ctk,t.pow);return finishWork(a);}openFor(a,t);});
  const r=PT.meta.rule;if(!PT.ended&&r.type==='years'&&S.day>r.years*YEAR_DAYS&&G.summary)partyEnd(`เล่นครบ ${r.years} ปี`);
  if(!PT.ended&&S.won)partyEnd(`ถึงเป้าหมาย ${fmt(S.goal)} แล้ว`);}
-function partyEnd(text){PT.ended=1;const ls=(G.avatars||[]).slice().sort((a,b)=>b.done-a.done);pcast({t:'over',text,money:Math.round(netWorth()),rev:Math.round(S.stats.total),day:S.day,rank:ls.map(a=>[a.name,PROLE[a.role],a.done])},true);showOver({text,money:Math.round(netWorth()),rev:Math.round(S.stats.total),day:S.day,rank:ls.map(a=>[a.name,PROLE[a.role],a.done])});}
+function partyEnd(text){PT.ended=1;const ls=(G.avatars||[]).slice().sort((a,b)=>b.done-a.done);const o={t:'over',text,money:Math.round(netWorth()),rev:Math.round(S.stats.total),day:S.day,rank:ls.map(a=>[a.name,'',a.done])};pcast(o,true);showOver(o);}
 function snapS(){return Object.assign({},S,{history:[],daily:[],ptPlayers:null});}
-function hostSnap(){if(!PT||!G||!S)return;PT.tick=(PT.tick||0)+1;const m={t:'s',c:G.cust.map(c=>({id:c.id,k:c.k,x:Math.round(c.x),y:Math.round(c.y),dir:c.dir,flip:c.flip,moving:c.moving,phase:c.phase,st:step(c)||null,pat:Math.round(c.pat),type:c.type||null,own:c.owner?1:0})),a:G.avatars.map(a=>({id:a.id,key:a.key,name:a.name,role:a.role,x:Math.round(a.x),y:Math.round(a.y),dir:a.dir,flip:a.flip,moving:a.moving})),q:G.queue.map(c=>c.id),j:G.jobs.map(j=>({own:j.owner?1:0})),fx:G.fx.map(f=>({x:f.x,y:f.y,t:f.t,text:f.text,col:f.col,big:f.big})),closing:G.closing,summary:!!G.summary,today:G.today,feed:G.feed};
+function hostSnap(){if(!PT||!G||!S)return;PT.tick=(PT.tick||0)+1;const m={t:'s',c:G.cust.map(c=>({id:c.id,k:c.k,x:Math.round(c.x),y:Math.round(c.y),dir:c.dir,flip:c.flip,moving:c.moving,phase:c.phase,st:step(c)||null,pat:Math.round(c.pat),type:c.type||null,own:c.owner?1:0})),a:G.avatars.map(a=>({id:a.id,key:a.key,name:a.name,fz:a.frozen===S.day?1:0,x:Math.round(a.x),y:Math.round(a.y),dir:a.dir,flip:a.flip,moving:a.moving})),q:G.queue.map(c=>c.id),j:G.jobs.map(j=>({own:j.owner?1:0})),fx:G.fx.map(f=>({x:f.x,y:f.y,t:f.t,text:f.text,col:f.col,big:f.big})),closing:G.closing,summary:!!G.summary,today:G.today,feed:G.feed};
  if(PT.tick%10===1)m.S=snapS();Object.keys(PT.peers).forEach(k=>psend(k,m));S.ptPlayers=PT.players;}
 
 /* ---------- เครื่องผู้เล่น ---------- */
 function clientMsg(m){
- if(m.t==='lobby'){PT.players=m.players;PT.hostId=null;if(!PT.started)lobbyShow();return;}
+ if(m.t==='lobby'){PT.players=m.players;PT.hostId=m.hostId;if(!PT.started)lobbyShow();return;}
  if(m.t==='reject'){const w=m.why;partyStop();closeModal();showTitle();toast(w);return;}
- if(m.t==='start'){PT.started=true;PT.role=m.role;closeModal();S=m.S;S.party=1;S.mp=null;startPlay(true);S=m.S;DAY_LEN=m.dayLen||90;G.ents={};G.avatars=[];G.spawn=1e9;$('#rail').classList.add('locked');mpBanner(`เปิดร้านแล้ว ตำแหน่งคุณ: ${PROLE[m.role]}`);return;}
+ if(m.t==='pcard'){if(S)S.pcard={id:m.id,day:m.day};if(PT.waiting){PT.waiting=false;}if(!PT.dlg)showCard(m);return;}
+ if(m.t==='start'){PT.started=true;closeModal();S=m.S;S.party=1;S.mp=null;startPlay(true);S=m.S;DAY_LEN=m.dayLen||90;G.ents={};G.avatars=[];G.spawn=1e9;$('#rail').classList.add('locked');mpBanner('เปิดร้านแล้ว ทุกคนทำได้ทุกงาน');return;}
  if(m.t==='s'){if(!G||!PT.started)return;applySnap(m);return;}
  if(m.t==='toast'){toast(m.text);softPlay('bad');return;}
  if(m.t==='cancel'){if(PT.dlg){PT.dlg=null;closeModal();toast('ลูกค้าคนนี้ไม่รอแล้ว');}return;}
@@ -129,21 +152,21 @@ function clientMsg(m){
  if(m.t==='over'){if(PT.host&&!m.rank)return;showOver(m);return;}}
 function ent(o,id){const e=G.ents[id]||(G.ents[id]={x:o.x,y:o.y,t:0,fade:1,si:0});return e;}
 function applySnap(m){const seen={};G.cust=m.c.map(o=>{const e=ent(o,'c'+o.id);seen['c'+o.id]=1;Object.assign(e,{id:o.id,k:o.k,tx:o.x,ty:o.y,dir:o.dir,flip:o.flip,moving:o.moving,phase:o.phase,steps:[o.st],pat:o.pat,type:o.type,owner:o.own?'x':null});return e;});
- G.avatars=m.a.map(o=>{const e=ent(o,'a'+o.id);seen['a'+o.id]=1;Object.assign(e,{id:o.id,key:o.key,name:o.name,role:o.role,tx:o.x,ty:o.y,dir:o.dir,flip:o.flip,moving:o.moving});return e;});
+ G.avatars=m.a.map(o=>{const e=ent(o,'a'+o.id);seen['a'+o.id]=1;Object.assign(e,{id:o.id,key:o.key,name:o.name,fz:o.fz,tx:o.x,ty:o.y,dir:o.dir,flip:o.flip,moving:o.moving});return e;});
  Object.keys(G.ents).forEach(k=>{if(!seen[k])delete G.ents[k];});G.queue=m.q.map(id=>G.cust.find(c=>c.id===id)).filter(Boolean);G.jobs=m.j.map(j=>({owner:j.own?1:null,t:0,dur:1}));G.fx=m.fx;G.closing=m.closing;G.today=m.today;G.feed=m.feed;
  if(m.S){m.S.party=1;S=m.S;}
  if(m.summary!==G.summary){G.summary=m.summary;if(m.summary){if(!PT.dlg)waitDay();}else if(PT.waiting){PT.waiting=false;closeModal();}}}
 function waitDay(){PT.waiting=true;const t=G.today||{};openModal(`<div class="sheethead"><h2>ปิดร้านแล้ว</h2></div><table class="ledger"><tbody><tr><td>ขายได้วันนี้</td><td>${fmt((t.rev||0)+(t.tip||0))}</td></tr><tr><td>บริการ</td><td>${t.served||0} คน</td></tr><tr><td>ลูกค้าเดินออก</td><td>${t.left||0} คน</td></tr></tbody></table><p class="note">รอเจ้าของห้องเติมของและกดเปิดร้าน</p>`,{lock:true});}
 function partyLerp(dt){[...G.cust,...G.avatars].forEach(e=>{if(e.tx==null)return;e.x+=(e.tx-e.x)*Math.min(1,dt*12);e.y+=(e.ty-e.y)*Math.min(1,dt*12);e.t=(e.t||0)+dt;});G.fx.forEach(f=>f.t-=dt);G.fx=G.fx.filter(f=>f.t>0);}
-function myRole(){return PT&&(PT.host?(PT.players[PT.id]||{}).role:PT.role);}
-function partyClick(p){if(!PT||!PT.started)return;const c=hitCust(p);if(c){const n=NEED[step(c)];if(n&&n!==myRole()){toast(`งานนี้ของ${PROLE[n]}`);return;}if(!c.owner)toHost({a:'claim',cid:c.id});return;}
- if(inZone(p,ZONE.lab)){if(myRole()==='tech')toHost({a:'claim',lab:1});return;}}
-function partyHint(){if(!PT||!PT.started)return'';if(G.summary)return PT.host?'เติมของให้พร้อม แล้วกดเปิดร้านด้านขวา':'รอเจ้าของห้องเปิดร้าน';const r=myRole();if(r==='tech')return G.jobs.some(j=>!j.owner)?'มีงานรอ คลิกโต๊ะช่าง':'รองานประกอบแว่น';const c=G.cust.find(c=>!c.owner&&(c.phase==='idle'||c.phase==='atChair'||c.phase==='counter')&&NEED[step(c)]===r);return c?(r==='od'?'คลิกลูกค้าที่ขึ้นคลิปบอร์ดเพื่อวัดตา':'คลิกลูกค้าที่รอคุณ'):'รองานของคุณ';}
-function isMine(c){return PT&&!c.owner&&(c.phase==='idle'||c.phase==='atChair'||c.phase==='counter')&&NEED[step(c)]===myRole();}
-function drawAvatars(list){(G.avatars||[]).forEach(a=>list.push({y:a.y,fn:()=>{drawActor(a,a.key,1);label(a.x,a.y+18,a.name,a.id===PT.id?'#f08a12':'#16204a','#fff',15);}}));}
-function ptPanel(){if(!PT||!PT.players)return'';const ps=Object.values(PT.players);return `<div class="mpbox"><b>ห้อง PARTY ${PT.code}</b><div class="mini">ตำแหน่งคุณ: ${PROLE[myRole()]||''}</div>${ps.map(p=>`<div class="statrow"><span>${esc(p.name)} · ${PROLE[p.role]||''}</span><span class="${p.conn===false?'neg':''}">${p.conn===false?'หลุด':'ออนไลน์'}</span></div>`).join('')}<div class="row" style="margin-top:6px"><button class="btn plain" data-ptl="1">ออกจากเกม</button>${PT.host?'<button class="btn red" data-ptc="1">ปิดห้อง</button>':''}</div></div>`;}
+function meFrozen(){return !!(G&&G.avatars&&G.avatars.some(a=>a.id===PT.id&&(a.fz||a.frozen===S.day)));}
+function partyClick(p){if(!PT||!PT.started)return;if(meFrozen()){toast('คุณโดนแช่แข็ง วันนี้ทำงานไม่ได้');return;}const c=hitCust(p);if(c){if(!c.owner)toHost({a:'claim',cid:c.id});return;}
+ if(inZone(p,ZONE.lab)){toHost({a:'claim',lab:1});return;}}
+function partyHint(){if(!PT||!PT.started)return'';if(G.summary)return PT.host?'เติมของให้พร้อม แล้วกดเปิดร้านด้านขวา':'รอเจ้าของห้องเปิดร้าน';if(meFrozen())return 'คุณโดนแช่แข็งวันนี้ รอเพื่อนช่วย';const c=G.cust.find(isMine);if(c)return 'คลิกลูกค้าที่มีวงสีเขียว';return G.jobs.some(j=>!j.owner)?'มีงานรอ คลิกโต๊ะช่าง':'รอลูกค้า';}
+function isMine(c){return PT&&!c.owner&&(c.phase==='idle'||c.phase==='atChair'||c.phase==='counter')&&!!NEED[step(c)];}
+function drawAvatars(list){(G.avatars||[]).forEach(a=>list.push({y:a.y,fn:()=>{drawActor(a,a.key,a.fz||a.frozen===S.day?.55:1);if(a.fz||a.frozen===S.day){ctx.fillStyle='rgba(120,200,255,.45)';ctx.fillRect(a.x-30,a.y-112,60,112);label(a.x,a.y-120,'แช่แข็ง','#2a7fd0','#fff',14);}label(a.x,a.y+18,a.name,a.id===PT.id?'#f08a12':'#16204a','#fff',15);}}));}
+function ptPanel(){if(!PT||!PT.players)return'';const ps=Object.values(PT.players);return `<div class="mpbox"><b>ห้อง PARTY ${PT.code}</b>${S.pcard&&S.pcard.day===S.day&&PCARD[S.pcard.id]?`<div class="mini neg">การ์ดวันนี้: ${PCARD[S.pcard.id].t}</div>`:`<div class="mini">การ์ดอุปสรรคถัดไป: วันที่ ${Math.ceil((S.day+1)/3)*3}</div>`}${ps.map(p=>`<div class="statrow"><span>${esc(p.name)}</span><span class="${p.conn===false?'neg':''}">${p.conn===false?'หลุด':'ออนไลน์'}</span></div>`).join('')}<div class="row" style="margin-top:6px"><button class="btn plain" data-ptl="1">ออกจากเกม</button>${PT.host?'<button class="btn red" data-ptc="1">ปิดห้อง</button>':''}</div></div>`;}
 function ptPanelClick(e){const b=e.target.closest('button');if(!b)return;if(b.dataset.ptl){if(PT.host)saveGame(true);partyStop();showTitle();}if(b.dataset.ptc)closeParty();}
-function showOver(m){if(PT)PT.over=1;if(PT&&PT.dlg)PT.dlg=null;softPlay('buy');openModal(`<div class="sheethead"><h2>${m.closed?'ห้องถูกปิด':'จบเกม PARTY'}</h2></div><div class="say">${sprHTML('e_podium',90)}<p>${esc(m.text||'')}</p></div>${m.rank?`<table class="ledger"><tbody><tr><td>เงินสุทธิของร้าน</td><td>${fmt(m.money)}</td></tr><tr><td>ยอดขายรวม</td><td>${fmt(m.rev)}</td></tr><tr><td>จบในวันที่</td><td>${m.day}</td></tr>${m.rank.map((r,i)=>`<tr class="${i?'':'hl'}"><td>${i?'':'MVP · '}${esc(r[0])} · ${r[1]}</td><td>${r[2]} งาน</td></tr>`).join('')}</tbody></table>`:''}<div class="row"><button class="btn gold" data-e="1">กลับเมนูหลัก</button></div>`,{lock:true});
+function showOver(m){if(PT)PT.over=1;if(PT&&PT.dlg)PT.dlg=null;softPlay('buy');openModal(`<div class="sheethead"><h2>${m.closed?'ห้องถูกปิด':'จบเกม PARTY'}</h2></div><div class="say">${sprHTML('e_podium',90)}<p>${esc(m.text||'')}</p></div>${m.rank?`<table class="ledger"><tbody><tr><td>เงินสุทธิของร้าน</td><td>${fmt(m.money)}</td></tr><tr><td>ยอดขายรวม</td><td>${fmt(m.rev)}</td></tr><tr><td>จบในวันที่</td><td>${m.day}</td></tr>${m.rank.map((r,i)=>`<tr class="${i?'':'hl'}"><td>${i?'':'MVP · '}${esc(r[0])}</td><td>${r[2]} งาน</td></tr>`).join('')}</tbody></table>`:''}<div class="row"><button class="btn gold" data-e="1">กลับเมนูหลัก</button></div>`,{lock:true});
  $('#modal [data-e]').onclick=async()=>{const h=PT&&PT.host,c=PT&&PT.code;if(h){try{await net.close(c);}catch(e){}store.del(KEY('PT'+c));}partyStop();closeModal();showTitle();};}
 
 /* ---------- หน้าต่างงานของแต่ละตำแหน่ง ---------- */
@@ -162,17 +185,31 @@ function pContact(d){const rows=ctList().map(k=>`<div class="ctrow">${sprHTML(CT
  const m=$('#modal');m.querySelector('[data-l]').onclick=sendRel;m.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const[k,p]=b.dataset.p.split('|');sendDone('contact',{ctk:k,pow:p});});}
 function pCash(d){if(d.type!=='bargain')return sendDone('cash',{deal:0});const sub=d.bill;const offers=[[0,.2],[.05,.5],[.1,.8],[.2,1]];const draw=()=>{openModal(`<div class="sheethead"><h2>เจรจาราคา</h2></div>${headSay(d,`ลดให้หน่อยได้ไหม บิลนี้ ${fmt(sub)}`)}<div class="evchoices">${offers.map((o,i)=>`<button class="btn ${o[0]?'':'green'}" data-o="${i}">${o[0]?'ลด '+o[0]*100+'%':'ยืนราคา'}</button>`).join('')}</div>`,{lock:true});$('#modal').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const o=offers[+b.dataset.o];if(Math.random()<o[1])sendDone('cash',{deal:o[0]});else{toast('ลูกค้าไม่ยอม เสนอใหม่');softPlay('bad');}});};draw();}
 /* มินิเกมเพื่อความบันเทิง ไม่ใช่การตรวจสายตาจริง */
-function pExam(d){let eye='r',val={r:0,l:0},rx={};const run=()=>{const T=d.rxT[eye],dv=Math.abs(val[eye]-T),blur=Math.min(9,dv*2.2);
+function pExam(d){let eye='r',val={r:0,l:0},rx={};const run=()=>{const hard=pfx('chart'),bk=hard?3.2:2.2,T=d.rxT[eye],dv=Math.abs(val[eye]-T),blur=Math.min(9,dv*bk);const vt=v=>hard?'?.??':v.toFixed(2);
  openModal(`<div class="sheethead"><h2>วัดตา${eye==='r'?'ขวา':'ซ้าย'}</h2></div>${headSay(d,'หมุนค่าเลนส์จนตัวอักษรคมชัดที่สุด แล้วยืนยัน')}<div class="chartbox2"><span class="chartE" id="exE" style="font-size:44px;filter:blur(${blur}px)">E F P T O Z</span></div>
- <div class="row dial"><button class="btn" data-v="-1">− 1.00</button><button class="btn" data-v="-.25">− 0.25</button><b id="exV">${val[eye].toFixed(2)}</b><button class="btn" data-v=".25">+ 0.25</button><button class="btn" data-v="1">+ 1.00</button></div><div class="row"><button class="btn gold" data-ok="1">ยืนยันค่า</button></div><p class="note">เกมจำลองเพื่อความบันเทิง ไม่ใช่การตรวจสายตาจริง</p>`,{lock:true});
- const m=$('#modal');m.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{val[eye]=clamp(val[eye]+ +b.dataset.v,-8,2);$('#exV').textContent=val[eye].toFixed(2);$('#exE').style.filter=`blur(${Math.min(9,Math.abs(val[eye]-T)*2.2)}px)`;softPlay('pick');});
+ <div class="row dial"><button class="btn" data-v="-1">− 1.00</button><button class="btn" data-v="-.25">− 0.25</button><b id="exV">${vt(val[eye])}</b><button class="btn" data-v=".25">+ 0.25</button><button class="btn" data-v="1">+ 1.00</button></div><div class="row"><button class="btn gold" data-ok="1">ยืนยันค่า</button></div><p class="note">เกมจำลองเพื่อความบันเทิง ไม่ใช่การตรวจสายตาจริง</p>`,{lock:true});
+ const m=$('#modal');m.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{val[eye]=clamp(val[eye]+ +b.dataset.v,-8,2);$('#exV').textContent=vt(val[eye]);$('#exE').style.filter=`blur(${Math.min(9,Math.abs(val[eye]-T)*bk)}px)`;softPlay('pick');});
  m.querySelector('[data-ok]').onclick=()=>{rx[eye]=val[eye];if(eye==='r'){eye='l';run();}else finish();};};
  const finish=()=>{const miss=Math.abs(rx.r-d.rxT.r)+Math.abs(rx.l-d.rxT.l);const dirs=[['บน',270],['ล่าง',90],['ซ้าย',180],['ขวา',0]],q=pick(dirs);openModal(`<div class="sheethead"><h2>ยืนยันผล</h2></div><p>ขาตัว E หันไปทางไหน</p><div class="chartbox2"><span class="chartE" style="font-size:44px;transform:rotate(${q[1]}deg)">E</span></div><div class="railbtns menu4">${dirs.map(x=>`<button class="btn" data-d="${x[0]}">${x[0]}</button>`).join('')}</div>`,{lock:true});
   $('#modal').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const good=b.dataset.d===q[0];const score=clamp(1-miss*.4-(good?0:.2),0,1);toast(score>=.8?'วัดตาแม่นมาก':score>=.5?'พอใช้':'ค่าคลาดเคลื่อน');sendDone('exam',{score,rx});});};run();}
 function pLab(d){const tk=d.ticket;const rxTxt=tk.rx?`R ${tk.rx.r.toFixed(2)} / L ${tk.rx.l.toFixed(2)}`:'ไม่มีใบวัด';let score=1,timer=0;
  const paper=`<div class="ticket"><b>ใบงาน: ${esc(tk.name||'ลูกค้า')}</b><span>${tk.repair?'ซ่อมและดัดแว่น':`เลนส์ ${esc(tk.lens||'-')} · ${rxTxt}`}</span><span>กรอบ ${esc(tk.frame||'-')}</span></div>`;
  const axis=()=>{const tg=20+Math.floor(Math.random()*140);openModal(`<div class="sheethead"><h2>ขั้น 3 ตั้งแกนเลนส์</h2></div>${paper}<p>เลื่อนให้แกนตรงเป้า ${tg}°</p><label class="vh" for="axR">แกนเลนส์</label><input id="axR" class="axr" type="range" min="0" max="180" value="90"><p class="mini" id="axV">90°</p><div class="row"><button class="btn gold" data-ok="1">ส่งงาน</button></div>`,{lock:true});const r=$('#axR');r.oninput=()=>$('#axV').textContent=r.value+'°';$('#modal [data-ok]').onclick=()=>{const miss=Math.abs(+r.value-tg);if(miss>4){score-=.15;softPlay('bad');toast('แกนยังไม่ตรง');return;}softPlay('ok');sendDone('lab',{score:clamp(score,0,1)});};};
- const grind=()=>{let pos=0,dir=1,tries=0;const z0=25+Math.floor(Math.random()*50);openModal(`<div class="sheethead"><h2>ขั้น 2 ฝนเลนส์</h2></div>${paper}<p>กดหยุดเมื่อเข็มอยู่ในช่วงสีเขียว</p><div class="gauge"><i class="zone" style="left:${z0}%;width:16%"></i><i class="needle" id="gN"></i></div><div class="row"><button class="btn gold" data-ok="1">หยุดเครื่อง</button></div>`,{lock:true});clearInterval(timer);timer=setInterval(()=>{const n=$('#gN');if(!n){clearInterval(timer);return;}pos+=dir*3.2;if(pos>=100||pos<=0)dir=-dir;n.style.left=pos+'%';},30);$('#modal [data-ok]').onclick=()=>{if(pos>=z0&&pos<=z0+16){clearInterval(timer);softPlay('ok');axis();}else{tries++;score-=.15;softPlay('bad');toast('ยังไม่ตรง ลองอีกครั้ง');if(tries>=4){clearInterval(timer);axis();}}};};
+ const grind=()=>{let pos=0,dir=1,tries=0;const hard=pfx('grind'),zw=hard?8:16,spd=hard?5.5:3.2;const z0=25+Math.floor(Math.random()*50);openModal(`<div class="sheethead"><h2>ขั้น 2 ฝนเลนส์</h2></div>${paper}<p>กดหยุดเมื่อเข็มอยู่ในช่วงสีเขียว</p><div class="gauge"><i class="zone" style="left:${z0}%;width:${zw}%"></i><i class="needle" id="gN"></i></div><div class="row"><button class="btn gold" data-ok="1">หยุดเครื่อง</button></div>`,{lock:true});clearInterval(timer);timer=setInterval(()=>{const n=$('#gN');if(!n){clearInterval(timer);return;}pos+=dir*spd;if(pos>=100||pos<=0)dir=-dir;n.style.left=pos+'%';},30);$('#modal [data-ok]').onclick=()=>{if(pos>=z0&&pos<=z0+zw){clearInterval(timer);softPlay('ok');axis();}else{tries++;score-=.15;softPlay('bad');toast('ยังไม่ตรง ลองอีกครั้ง');if(tries>=4){clearInterval(timer);axis();}}};};
  if(tk.repair)return grind();const pw=tk.rx?tk.rx.r:-2;const pool=[[tk.lens,pw,1],[tk.lens,pw-.75,0],[tk.lens,pw+.5,0],[Object.values(LENSES).map(l=>l.name).find(n=>n!==tk.lens),pw,0]].sort(()=>Math.random()-.5);
  openModal(`<div class="sheethead"><h2>ขั้น 1 หยิบเลนส์</h2></div>${paper}<p>เลือกเลนส์ให้ตรงใบงาน</p><div class="grid">${pool.map((x,i)=>`<button class="item col" data-t="${i}"><b>${esc(x[0]||'-')}</b><small>ค่าสายตา ${x[1].toFixed(2)}</small></button>`).join('')}</div>`,{lock:true});
  $('#modal').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{if(pool[+b.dataset.t][2]){softPlay('ok');grind();}else{score-=.2;softPlay('bad');toast('หยิบผิด ดูใบงานอีกครั้ง');}});}
+
+/* ---------- การ์ดอุปสรรค (เครื่องเจ้าของห้อง) ---------- */
+function partyDayCard(){G.dayFx={};if(S.day%3!==0)return;const last=S.pcard&&S.pcard.id;const pool=PCARDS.filter(c=>c.id!==last);const c=(window.__qa&&PCARD[window.__pcForce])||pick(pool);S.pcard={id:c.id,day:S.day};let extra='';
+ if(c.id==='picky')G.burst=20,G.burstT=.5;
+ if(c.id==='exam')G.dayFx.spawn=.45;
+ if(c.id==='pat')G.dayFx.pat=.5;
+ if(c.id==='steal'){const n=Math.max(0,Math.round(S.money*.3));spend('incident',n);extra=`เสียไป ${fmt(n)}`;}
+ if(c.id==='stock'){Object.values(S.lens).forEach(l=>{if(l&&l.stock)l.stock=Math.floor(l.stock/2);});Object.keys(S.frames).forEach(k=>S.frames[k]=Math.floor(S.frames[k]/2));Object.keys(S.ct||{}).forEach(k=>S.ct[k]=Math.floor(S.ct[k]/2));}
+ if(c.id==='freeze'){const on=G.avatars.filter(a=>!PT.players[a.id]||PT.players[a.id].conn!==false);const n=Math.min(on.length-1,Math.ceil(on.length/4));const pickd=on.sort(()=>Math.random()-.5).slice(0,Math.max(n,on.length>1?1:0));pickd.forEach(a=>a.frozen=S.day);extra=pickd.length?'ผู้โชคร้าย: '+pickd.map(a=>a.name).join(', '):'';}
+ log(`การ์ดอุปสรรค: ${c.t}`,'r');const m={t:'pcard',id:c.id,day:S.day,extra};pcast(m,true);showCard(m);}
+function burstTick(dt){if(!G.burst||G.closing)return;G.burstT-=dt;if(G.burstT>0)return;G.burstT=.7;let free=false;for(let i=0;i<seatCount();i++)if(!G.cust.some(c=>c.seat===i))free=true;if(!free)return;G.forceQ=['c12'];spawnCustomer();G.burst--;}
+function partyMod(c){if(pfx('exam')){c.steps=['exam','pay'];c.ctType=null;}if(pfx('bargain')&&!c.type)c.type='bargain';}
+function partyIncome(){return pfx('half')?.5:1;}
+function showCard(m){const c=PCARD[m.id];if(!c)return;softPlay('bad');openModal(`<div class="sheethead"><h2>การ์ดอุปสรรค วันที่ ${m.day}</h2></div><div class="pcard"><b>${c.t}</b><p>${c.d}</p>${m.extra?`<p class="neg">${esc(m.extra)}</p>`:''}<small>มีผลจนปิดร้านวันนี้</small></div><div class="row"><button class="btn gold" data-ok="1">รับทราบ</button></div>`,{lock:true});const t=setTimeout(()=>{if($('#modal [data-pcok]'))closeModal();},8000);const b=$('#modal [data-ok]');b.dataset.pcok=1;b.onclick=()=>{clearTimeout(t);closeModal();};}

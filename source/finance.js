@@ -59,7 +59,7 @@ function fillPlan(){const out=[];
  ctList().forEach(k=>CTPOW.forEach(p=>out.push({need:fillGet('ct',k)-ctStock(k,p),unit:CT[k].cost,led:'lensBuy',add:q=>{S.ct[k+'|'+p]=ctStock(k,p)+q;}})));
  return out.filter(x=>x.need>0);}
 function fillSummary(){const p=fillPlan();return{n:p.reduce((a,x)=>a+x.need,0),cost:p.reduce((a,x)=>a+x.need*x.unit,0)};}
-function fillAll(){const plan=fillPlan();let n=0,c=0,short=false;plan.forEach(x=>{const q=Math.min(x.need,Math.floor(Math.max(0,S.money)/x.unit));if(q<x.need)short=true;if(q<=0)return;spend(x.led,q*x.unit);x.add(q);n+=q;c+=q*x.unit;});
+function fillAll(){if(truckLock()){toast('การ์ดรถขนส่งเสีย วันนี้สั่งสินค้าไม่ได้');return;}const plan=fillPlan();let n=0,c=0,short=false;plan.forEach(x=>{const q=Math.min(x.need,Math.floor(Math.max(0,S.money)/x.unit));if(q<x.need)short=true;if(q<=0)return;spend(x.led,q*x.unit);x.add(q);n+=q;c+=q*x.unit;});
  G.today.buy+=c;if(n){softPlay('buy');log(`เติมสต็อก ${n} ชิ้น ${fmt(c)}`,'g');saveGame(true);}
  toast(!plan.length?'สต็อกครบตามที่ตั้งไว้แล้ว':short?`เงินไม่พอเติมครบ เติมได้ ${n} ชิ้น ${fmt(c)}`:`เติมสต็อกแล้ว ${n} ชิ้น ${fmt(c)}`);renderRail();}
 function fillPanel(){if(!own('autostock'))return `<p class="note">ซื้อ "ระบบเติมสต็อกปุ่มเดียว" ได้ที่ ซื้อของ &gt; ปรับปรุงร้าน ราคา ${fmt(FILL_PRICE)}</p>`;const f=fillSummary();
@@ -131,5 +131,5 @@ function cardDialog(title,then,force){openModal(`<div class="sheethead"><h2>เ�
 /* ===== เป้าหมายชนะ และความเร็วตามเลเวล ===== */
 function lvSpawn(){return 1+Math.min(S.level,60)*.012;}
 function lvPat(){return 1+Math.min(S.level,60)*.008;}
-function checkGoal(){if(!S.goal||S.won||netWorth()<S.goal||!$('#modal').hidden)return;S.won=S.day;checkTrophies();saveGame(true);softPlay('buy');
+function checkGoal(){if(!S.goal||S.won||netWorth()<S.goal)return;if(S.party){S.won=S.day;return;}if(!$('#modal').hidden)return;S.won=S.day;checkTrophies();saveGame(true);softPlay('buy');
  openModal(`<div class="sheethead"><h2>คุณชนะแล้ว!</h2></div><div class="say">${sprHTML('e_podium',110)}<p>${esc(S.shopName)} มีเงินถึงเป้าหมาย ${fmt(S.goal)} ในวันที่ ${S.day}<br>รับถ้วยรางวัล "เป้าหมายสำเร็จ"</p></div><div class="row"><button class="btn gold" data-c="1">เล่นต่อ</button></div>`,{lock:true});$('#modal [data-c]').onclick=closeModal;}

@@ -63,7 +63,7 @@ function lensBrand(id){return LENSES[id].brand||'Hoya';}
 function courseDone(id){return Object.values(S.staffData).some(d=>d.courses.includes(id));}
 function saleBonus(id){return COURSES.reduce((a,c)=>a+(c.bonus&&c.brand===lensBrand(id)&&courseDone(c.id)?c.bonus:0),0);}
 function satBonus(){return COURSES.reduce((a,c)=>a+(courseDone(c.id)?(c.sat||0):0),0);}
-function lensPrice(id){return LENSES[id].price*repMul()*(1+saleBonus(id));}
+function lensPrice(id){return LENSES[id].price*repMul()*(1+saleBonus(id))*(bfx('lens')?1.3:1);}
 function bestLensFor(kind){const a=Object.keys(LENSES).filter(id=>lensKind(id)===kind&&lensAvailable(id)&&lensState(id).stock>0);a.sort((x,y)=>LENSES[y].price-LENSES[x].price);return a[0]||null;}
 function courseReqs(c,k){const d=sdOf(k);return[
  {ok:d.years>=c.req.years,t:`ประสบการณ์ทำงาน ${c.req.years} ปีขึ้นไป (มี ${d.years.toFixed(1)} ปี)`},
@@ -146,7 +146,7 @@ function mapDialog(){
 let evMode='sales';
 function rivalDialog(r){
  const b=S.ev.beat[r.id],cool=coolLeft(r),prize=eventPrize(r),own_=S.branches.includes(r.id);
- const blocked=G.event?'กำลังแข่งอยู่':G.closing?'ร้านปิดรับลูกค้าแล้ว รอเปิดวันใหม่':cool?`แข่งร้านนี้ได้อีกครั้งใน ${cool} วัน`:'';
+ const blocked=G.event?'กำลังแข่งอยู่':S.ev.lastM===monthOf(S.day)?'ท้าแข่งได้เดือนละ 1 ครั้ง รอเดือนหน้า':G.closing?'ร้านปิดรับลูกค้าแล้ว รอเปิดวันใหม่':cool?`แข่งร้านนี้ได้อีกครั้งใน ${cool} วัน`:'';
  openModal(`<div class="sheethead"><h2>${r.name}</h2><button class="btn plain" data-back="1">กลับแผนที่</button></div>
  <div class="say">${sprHTML(r.spr,110)}<p>${r.say}<br><span class="tag">${AREAS[r.area].name}</span> ${b?'<span class="tag ok">เคยชนะแล้ว</span>':''}</p></div>
  <table class="ledger"><tbody><tr><td>เวลาแข่ง</td><td>${EVENT_LEN} วินาที</td></tr><tr><td>อันดับ 1</td><td>${fmt(prize)}</td></tr><tr><td>อันดับ 2</td><td>${fmt(prize*.3)}</td></tr><tr><td>อันดับ 3</td><td>${fmt(prize*.1)}</td></tr></tbody></table>
@@ -165,7 +165,7 @@ function travelTo(r){mapTab='map';mapDialog();const m=$('#modal');m._o.lock=true
 function startEvent(r){
  const i=RIVALS.indexOf(r);const others=RIVALS.filter(x=>x!==r&&Math.abs(RIVALS.indexOf(x)-i)<=2).slice(0,2);
  G.event={id:r.id,mode:evMode,t:EVENT_LEN,me:0,rows:[{id:r.id,name:r.name,sales:0,pace:r.pace},...others.map(o=>({id:o.id,name:o.name,sales:0,pace:r.pace*.72}))]};
- G.spawn=Math.min(G.spawn,1);S.stats.events++;S.ev.last[r.id]=S.day;checkTrophies();log(`เริ่มแข่งยอดขายกับ ${r.name}`);beep('buy');}
+ G.spawn=Math.min(G.spawn,1);S.stats.events++;S.ev.last[r.id]=S.day;S.ev.lastM=monthOf(S.day);checkTrophies();log(`เริ่มแข่งยอดขายกับ ${r.name}`);beep('buy');}
 function tickEvent(dt){const e=G.event;e.t-=dt;e.rows.forEach(x=>{x.sales+=x.pace*dt*rnd(.75,1.25);});if(e.t<=0)finishEvent();}
 function eventRank(){const e=G.event;return e.rows.filter(x=>x.sales>e.me).length+1;}
 function finishEvent(){const e=G.event,r=RIVAL[e.id];G.event=null;
@@ -324,5 +324,5 @@ function trophyDialog(){const done=Object.keys(S.trophies).length;const list=TRO
 function _trophyWallRemoved(){const names=Object.keys(S.trophies).slice(-5);names.forEach((n,i)=>{const t=TROPHIES.find(x=>x[1]===n);if(t)drawIcon(troIcon(t),640+i*48,120,44);});}
 
 /* ---------- เซฟเก่า ---------- */
-function migrate(){if(S.party&&!S.partyDay)S.partyDay=90;S.layout={};if(S.stock&&S.stock.listed){S.money+=S.stock.mine*S.stock.price;S._refund=S.stock.mine*S.stock.price;}S.stock=null;if(S.frames===undefined)S._newFrames=1;const f=fresh(S.code);Object.keys(f).forEach(k=>{if(S[k]===undefined)S[k]=f[k];});S.stats=Object.assign(f.stats,S.stats);S.ev=Object.assign(f.ev,S.ev);S.ledger=Object.assign(blankLedger(),S.ledger);if(S.stats.total===0&&S.earned)S.stats.total=S.earned;if(S._newFrames){delete S._newFrames;Object.keys(FRAME_CATS).forEach(k=>{if(frameUnlocked(k))S.frames[k]=(S.frames[k]||0)+(k==='basic'?0:6);});}
+function migrate(){if(S.blessInv)infEnd();if(S.party&&!S.partyDay)S.partyDay=90;S.layout={};if(S.stock&&S.stock.listed){S.money+=S.stock.mine*S.stock.price;S._refund=S.stock.mine*S.stock.price;}S.stock=null;if(S.frames===undefined)S._newFrames=1;const f=fresh(S.code);Object.keys(f).forEach(k=>{if(S[k]===undefined)S[k]=f[k];});S.stats=Object.assign(f.stats,S.stats);S.ev=Object.assign(f.ev,S.ev);S.ledger=Object.assign(blankLedger(),S.ledger);if(S.stats.total===0&&S.earned)S.stats.total=S.earned;if(S._newFrames){delete S._newFrames;Object.keys(FRAME_CATS).forEach(k=>{if(frameUnlocked(k))S.frames[k]=(S.frames[k]||0)+(k==='basic'?0:6);});}
  /* โทรฟี่ City Dominator ที่ได้จากเงื่อนไขเดิมซึ่งง่ายเกินไป */ if(S.trophies['City Dominator']&&!RIVALS.every(r=>S.ev.beat[r.id]))delete S.trophies['City Dominator'];}

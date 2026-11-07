@@ -39,14 +39,14 @@ function partyForm(host){let g='m',rule={type:'money',goal:5000000},dayLen=90;co
  <form id="ptF" class="suform"><label for="ptCode">รหัสห้อง 4 หลัก</label><input id="ptCode" class="nameinput" inputmode="numeric" maxlength="4" autocomplete="off" value="${host?String(1000+Math.floor(Math.random()*9000)):''}">
  <label for="ptName">ชื่อคุณ</label><input id="ptName" class="nameinput" maxlength="20" autocomplete="off" value="${esc(last)}">
  ${host?`<label for="ptShop">ชื่อร้าน</label><input id="ptShop" class="nameinput" maxlength="24" autocomplete="off" value="Social Eyewear">
- <label>เป้าหมายทีม</label><div class="row">${[1000000,5000000,10000000].map(n=>`<button type="button" class="tab" data-gl="${n}">เงิน ${fmt(n)}</button>`).join('')}${[1,3].map(y=>`<button type="button" class="tab" data-yr="${y}">ครบ ${y} ปี</button>`).join('')}</div>
+ <label>เป้าหมายทีม</label><div class="row">${[1000000,5000000,10000000].map(n=>`<button type="button" class="tab" data-gl="${n}">เงิน ${fmt(n)}</button>`).join('')}${[1,3].map(y=>`<button type="button" class="tab" data-yr="${y}">ครบ ${y} ปี</button>`).join('')}</div><label class="vh" for="ptGoal">พิมพ์ยอดเงินเป้าหมายเอง</label><input id="ptGoal" class="nameinput goalin" inputmode="numeric" autocomplete="off" placeholder="หรือพิมพ์ยอดเอง (บาท) เช่น 3000000">
  <label>ความยาว 1 วัน</label><div class="row">${[60,90,150].map(n=>`<button type="button" class="tab" data-dl="${n}">${n} วินาที</button>`).join('')}</div>`:''}
  <p class="err" id="ptErr" role="alert"></p><button class="btn gold">${host?'สร้างห้อง':'เข้าห้อง'}</button></form>`,{lock:true});
  const m=$('#modal');m.querySelector('[data-c]').onclick=partyMenu;m.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{g=b.dataset.g;m.querySelectorAll('[data-g]').forEach(x=>x.classList.toggle('on',x===b));});
  const paint=()=>{m.querySelectorAll('[data-gl]').forEach(x=>x.classList.toggle('on',rule.type==='money'&&+x.dataset.gl===rule.goal));m.querySelectorAll('[data-yr]').forEach(x=>x.classList.toggle('on',rule.type==='years'&&+x.dataset.yr===rule.years));m.querySelectorAll('[data-dl]').forEach(x=>x.classList.toggle('on',+x.dataset.dl===dayLen));};
- if(host){m.querySelectorAll('[data-gl]').forEach(b=>b.onclick=()=>{rule={type:'money',goal:+b.dataset.gl};paint();});m.querySelectorAll('[data-yr]').forEach(b=>b.onclick=()=>{rule={type:'years',years:+b.dataset.yr};paint();});m.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>{dayLen=+b.dataset.dl;paint();});paint();}
+ if(host){m.querySelectorAll('[data-gl]').forEach(b=>b.onclick=()=>{rule={type:'money',goal:+b.dataset.gl};$('#ptGoal').value=b.dataset.gl;paint();});$('#ptGoal').oninput=e=>{const n=parseInt(e.target.value.replace(/\D/g,''))||0;e.target.value=n||'';if(n>=100000)rule={type:'money',goal:n};paint();};m.querySelectorAll('[data-yr]').forEach(b=>b.onclick=()=>{rule={type:'years',years:+b.dataset.yr};paint();});m.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>{dayLen=+b.dataset.dl;paint();});paint();}
  $('#ptF').onsubmit=async e=>{e.preventDefault();const err=$('#ptErr'),code=$('#ptCode').value.trim();if(!/^\d{4}$/.test(code)){err.textContent='ใส่รหัสตัวเลข 4 หลัก';return;}
-  const name=cleanName($('#ptName').value,20)||'ผู้เล่น';store.set('socialeyewear.mp.name',name);err.textContent='กำลังเชื่อมต่อ…';const id=mpMyId(code);
+  const gin=$('#ptGoal');if(host&&gin&&gin.value&&+gin.value<100000){err.textContent='ยอดเงินเป้าหมายต้องอย่างน้อย ฿100,000';return;}const name=cleanName($('#ptName').value,20)||'ผู้เล่น';store.set('socialeyewear.mp.name',name);err.textContent='กำลังเชื่อมต่อ…';const id=mpMyId(code);
   try{if(host){const shop=cleanName($('#ptShop').value,24)||'Social Eyewear';let ok=await net.create(code,{code,mode:'party',host:id,rule,dayLen,status:'lobby'});let meta={rule,dayLen,status:'lobby'};
      if(!ok){const st=await net.get(code);if(!st.meta||st.meta.mode!=='party'||st.meta.host!==id){err.textContent=`รหัส ${code} มีคนใช้แล้ว เปลี่ยนรหัสใหม่`;return;}meta=st.meta;}
      hostStart(code,id,name,g,shop,meta);}
@@ -143,7 +143,7 @@ function hostSnap(){if(!PT||!G||!S)return;PT.tick=(PT.tick||0)+1;const m={t:'s',
 function clientMsg(m){
  if(m.t==='lobby'){PT.players=m.players;PT.hostId=m.hostId;if(!PT.started)lobbyShow();return;}
  if(m.t==='reject'){const w=m.why;partyStop();closeModal();showTitle();toast(w);return;}
- if(m.t==='pcard'){if(S)S.pcard={id:m.id,day:m.day};if(PT.waiting){PT.waiting=false;}if(!PT.dlg)showCard(m);return;}
+ if(m.t==='pcard'){if(S&&m.id)S.pcard={id:m.id,day:m.day};if(S&&m.bless)S.bless={id:m.bless,day:m.day};if(PT.waiting){PT.waiting=false;}if(!PT.dlg)showCard(m);return;}
  if(m.t==='start'){PT.started=true;closeModal();S=m.S;S.party=1;S.mp=null;startPlay(true);S=m.S;DAY_LEN=m.dayLen||90;G.ents={};G.avatars=[];G.spawn=1e9;$('#rail').classList.add('locked');mpBanner('เปิดร้านแล้ว ทุกคนทำได้ทุกงาน');return;}
  if(m.t==='s'){if(!G||!PT.started)return;applySnap(m);return;}
  if(m.t==='toast'){toast(m.text);softPlay('bad');return;}
@@ -201,15 +201,15 @@ function pLab(d){const tk=d.ticket;const rxTxt=tk.rx?`R ${tk.rx.r.toFixed(2)} / 
  $('#modal').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{if(pool[+b.dataset.t][2]){softPlay('ok');grind();}else{score-=.2;softPlay('bad');toast('หยิบผิด ดูใบงานอีกครั้ง');}});}
 
 /* ---------- การ์ดอุปสรรค (เครื่องเจ้าของห้อง) ---------- */
-function partyDayCard(){G.dayFx={};if(S.day%3!==0)return;const last=S.pcard&&S.pcard.id;const pool=PCARDS.filter(c=>c.id!==last);const c=(window.__qa&&PCARD[window.__pcForce])||pick(pool);S.pcard={id:c.id,day:S.day};let extra='';
+function partyDayCard(){G.dayFx={};const bb=blessRoll();if(S.day%3!==0){if(bb){const m={t:'pcard',day:S.day,bless:bb.id};pcast(m,true);showCard(m);}return;}const last=S.pcard&&S.pcard.id;const pool=PCARDS.filter(c=>c.id!==last);const c=(window.__qa&&PCARD[window.__pcForce])||pick(pool);S.pcard={id:c.id,day:S.day};let extra='';
  if(c.id==='picky')G.burst=20,G.burstT=.5;
  if(c.id==='exam')G.dayFx.spawn=.45;
  if(c.id==='pat')G.dayFx.pat=.5;
  if(c.id==='steal'){const n=Math.max(0,Math.round(S.money*.3));spend('incident',n);extra=`เสียไป ${fmt(n)}`;}
  if(c.id==='stock'){Object.values(S.lens).forEach(l=>{if(l&&l.stock)l.stock=Math.floor(l.stock/2);});Object.keys(S.frames).forEach(k=>S.frames[k]=Math.floor(S.frames[k]/2));Object.keys(S.ct||{}).forEach(k=>S.ct[k]=Math.floor(S.ct[k]/2));}
  if(c.id==='freeze'){const on=G.avatars.filter(a=>!PT.players[a.id]||PT.players[a.id].conn!==false);const n=Math.min(on.length-1,Math.ceil(on.length/4));const pickd=on.sort(()=>Math.random()-.5).slice(0,Math.max(n,on.length>1?1:0));pickd.forEach(a=>a.frozen=S.day);extra=pickd.length?'ผู้โชคร้าย: '+pickd.map(a=>a.name).join(', '):'';}
- log(`การ์ดอุปสรรค: ${c.t}`,'r');const m={t:'pcard',id:c.id,day:S.day,extra};pcast(m,true);showCard(m);}
+ log(`การ์ดอุปสรรค: ${c.t}`,'r');const m={t:'pcard',id:c.id,day:S.day,extra};if(bb)m.bless=bb.id;pcast(m,true);showCard(m);}
 function burstTick(dt){if(!G.burst||G.closing)return;G.burstT-=dt;if(G.burstT>0)return;G.burstT=.7;let free=false;for(let i=0;i<seatCount();i++)if(!G.cust.some(c=>c.seat===i))free=true;if(!free)return;G.forceQ=['c12'];spawnCustomer();G.burst--;}
 function partyMod(c){if(pfx('exam')){c.steps=['exam','pay'];c.ctType=null;}if(pfx('bargain')&&!c.type)c.type='bargain';}
 function partyIncome(){return pfx('half')?.5:1;}
-function showCard(m){const c=PCARD[m.id];if(!c)return;softPlay('bad');openModal(`<div class="sheethead"><h2>การ์ดอุปสรรค วันที่ ${m.day}</h2></div><div class="pcard"><b>${c.t}</b><p>${c.d}</p>${m.extra?`<p class="neg">${esc(m.extra)}</p>`:''}<small>มีผลจนปิดร้านวันนี้</small></div><div class="row"><button class="btn gold" data-ok="1">รับทราบ</button></div>`,{lock:true});const t=setTimeout(()=>{if($('#modal [data-pcok]'))closeModal();},8000);const b=$('#modal [data-ok]');b.dataset.pcok=1;b.onclick=()=>{clearTimeout(t);closeModal();};}
+function showCard(m){const c=PCARD[m.id],bl=BLESSM[m.bless];if(!c&&!bl)return;softPlay(c?'bad':'buy');openModal(`<div class="sheethead"><h2>${c?'การ์ดอุปสรรค':'เทพประทานพร'} วันที่ ${m.day}</h2></div>${c?`<div class="pcard"><b>${c.t}</b><p>${c.d}</p>${m.extra?`<p class="neg">${esc(m.extra)}</p>`:''}<small>มีผลจนปิดร้านวันนี้</small></div>`:''}${bl?blessHTML(bl):''}<div class="row"><button class="btn gold" data-ok="1">รับทราบ</button></div>`,{lock:true});const t=setTimeout(()=>{if($('#modal [data-pcok]'))closeModal();},8000);const b=$('#modal [data-ok]');b.dataset.pcok=1;b.onclick=()=>{clearTimeout(t);closeModal();};}

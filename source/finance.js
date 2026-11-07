@@ -85,7 +85,7 @@ function depRate(b){const t=DEP_TIERS.find(x=>b>=x[0]);return t?t[1]:0;}
 function loanRate(b){const t=LOAN_TIERS.find(x=>b<=x[0]);return t?t[1]:LOAN_TIERS[LOAN_TIERS.length-1][1];}
 function financeMonth(){const b=S.bank;if(b.dep>0){const n=b.dep*depRate(b.dep)/100;if(n){b.dep+=n;S.ledger.depInt=(S.ledger.depInt||0)+n;}}if(b.loan>0)spend('loanInt',b.loan*loanRate(b.loan)/100);}
 function netWorth(){return S.money+S.bank.dep-S.bank.loan;}
-function bankMonth(then,fromMenu){const b=S.bank,mo=monthOf(S.day),used=b.txM===mo;const dep=[100000,500000,1000000];const money=Math.max(0,S.money);
+function bankMonth(then,fromMenu){if(S.mp||S.party){if(S.bank&&(S.bank.dep||S.bank.loan)){capIn(S.bank.dep||0);S.money-=S.bank.loan||0;S.bank.dep=0;S.bank.loan=0;}if(!fromMenu&&then)then();return;}const b=S.bank,mo=monthOf(S.day),used=b.txM===mo;const dep=[100000,500000,1000000];const money=Math.max(0,S.money);
  openModal(`<div class="sheethead"><h2>${fromMenu?'ธนาคาร':'ธนาคารสิ้นเดือน'}</h2><span class="price">${fmt(S.money)}</span></div>
  <p class="note">ฝากหรือถอนได้เดือนละ 1 รายการ · ฝากฟรี · ถอนครั้งละ ${fmt(WD_FEE)} · ดอกเบี้ยเงินฝากต่อเดือน: ฿100,000 ขึ้นไป 0.25% · ฿500,000 ขึ้นไป 0.5% · ฿1,000,000 ขึ้นไป 1%</p>
  <div class="two"><div class="card"><h3>เงินฝาก ${fmt(b.dep)}</h3><p class="mini">อัตราตอนนี้ ${depRate(b.dep)}% ต่อเดือน ${used?'· เดือนนี้ทำรายการแล้ว':''}</p>

@@ -208,3 +208,5 @@ button.vcard:hover{transform:translateY(-4px)}
 #rail.locked .row .btn{display:inline-flex}
 
 .pcard{background:#2a1838;color:#fff;border:3px solid var(--ink);border-radius:10px;padding:16px;text-align:center}.pcard b{font:500 26px var(--display);color:#ffcf4a;display:block}.pcard p{margin:6px 0}.pcard .neg{color:#ff9aa8}.pcard small{opacity:.8}
+
+.blesscard{flex:1;background:linear-gradient(#fff7d6,#ffe9a3);border:3px solid #c99a1c;border-radius:10px;padding:12px;text-align:center}.blesscard b{font:500 24px var(--display);color:#9a6a00;display:block}.blesscard p{margin:4px 0}

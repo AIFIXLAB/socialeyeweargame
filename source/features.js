@@ -199,3 +199,22 @@ function renameDialog(k){const d=STAFF[k];openModal(`<div class="sheethead"><h2>
  $('#rnForm').onsubmit=e=>{e.preventDefault();const v=i.value.replace(/[<>&"']/g,'').trim().slice(0,20);if(v)S.names[k]=v;else delete S.names[k];softPlay('ok');saveGame(true);log(`เปลี่ยนชื่อเป็น ${staffNameOf(k)} แล้ว`,'g');staffDialog();renderRail();};}
 
 function playerKey(){return S&&S.owner&&S.owner.gender==='f'?'od2':'od1';}
+
+/* ===== เทพประทานพร: ครบทุก 5 วัน วันถัดไป (วันที่ 6, 11, 16 …) ได้พร 1 วัน ===== */
+const BLESS=[
+ {id:'x2',t:'รายได้คูณ 2',d:'ทุกออเดอร์วันนี้ได้เงินเป็น 2 เท่า'},
+ {id:'lens',t:'เลนส์ราคาดี',d:'ขายเลนส์ได้แพงขึ้น 30%'},
+ {id:'exam',t:'ค่าตรวจคูณ 5',d:'ค่าตรวจสายตาทุกออเดอร์เป็น 5 เท่า'},
+ {id:'tip',t:'ทิปคูณ 3',d:'ทิปทุกออเดอร์เป็น 3 เท่า'},
+ {id:'calm',t:'ลูกค้าใจเย็น',d:'เกจความอดทนของลูกค้าไม่ลดเลยทั้งวัน'},
+ {id:'vip',t:'วัน VIP',d:'ลูกค้าทุกคนเป็น VIP กระเป๋าหนัก'},
+ {id:'inf',t:'คลังไม่มีวันหมด',d:'สต็อกทุกชนิดไม่จำกัดทั้งวัน'}];
+const BLESSM={};BLESS.forEach(b=>BLESSM[b.id]=b);
+function bfx(id){return !!(S&&S.bless&&S.bless.id===id&&S.bless.day===S.day);}
+function blessDay(d){return d>1&&(d-1)%5===0;}
+function hashN(s){let h=7;for(const ch of String(s))h=(h*31+ch.charCodeAt(0))>>>0;return h;}
+function blessRoll(){if(!blessDay(S.day))return null;let b;if(window.__qa&&BLESSM[window.__blessForce])b=BLESSM[window.__blessForce];else if(S.mp)b=BLESS[hashN(S.mp.room+':'+S.day)%BLESS.length];else b=pick(BLESS);S.bless={id:b.id,day:S.day};if(b.id==='inf')infStart();log(`เทพประทานพร: ${b.t}`,'g');return b;}
+function infStart(){if(S.blessInv)return;const keep={lens:{},frames:{},ct:{}};Object.entries(S.lens).forEach(([k,l])=>{if(l){keep.lens[k]=l.stock||0;l.stock=999;}});Object.keys(S.frames).forEach(k=>{keep.frames[k]=S.frames[k];S.frames[k]=999;});Object.keys(S.ct||{}).forEach(k=>{keep.ct[k]=S.ct[k];S.ct[k]=999;});S.blessInv=keep;}
+function infEnd(){const k=S.blessInv;if(!k)return;Object.entries(k.lens).forEach(([id,n])=>{if(S.lens[id])S.lens[id].stock=n;});Object.entries(k.frames).forEach(([id,n])=>S.frames[id]=n);Object.entries(k.ct).forEach(([id,n])=>{if(S.ct)S.ct[id]=n;});S.blessInv=null;}
+function blessHTML(b){return `<div class="say">${sprHTML('e_podium',80)}<div class="blesscard"><b>${b.t}</b><p>${b.d}</p><small>ครบ 5 วันแล้ว พรนี้มีผลเฉพาะวันนี้</small></div></div>`;}
+function showBless(b){softPlay('buy');const go=()=>{if(!$('#modal').hidden){mpBanner(`เทพประทานพร: ${b.t}`);return;}openModal(`<div class="sheethead"><h2>เทพประทานพร วันที่ ${S.day}</h2></div>${blessHTML(b)}<div class="row"><button class="btn gold" data-ok="1">รับพร</button></div>`);$('#modal [data-ok]').onclick=closeModal;};setTimeout(go,250);}

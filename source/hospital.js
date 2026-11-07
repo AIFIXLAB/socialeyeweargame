@@ -60,7 +60,7 @@ function missionOpen(m){return !m.req||S.hosp.done[m.req];}
 function teamFor(m){const free=k=>!isTraining(k);const od=S.staff.filter(k=>STAFF[k].role==='od'&&free(k)),sl=S.staff.filter(k=>STAFF[k].role==='sales'&&free(k));return{od:od.slice(0,m.od),sl:sl.slice(0,m.sl)};}
 function missionReady(m){const t=teamFor(m);return t.od.length>=m.od&&t.sl.length>=m.sl&&m.kit.every(hasKit);}
 function hospCool(m){return S.hosp.lastM===monthOf(S.day)?MONTH_DAYS-dayInMonth(S.day)+1:0;}
-function hospitalCall(){if(window.__qaNoCall)return false;const mo=monthOf(S.day);if(S.day<3||S.hosp.callM===mo||S.hosp.lastM===mo)return false;const open=MISSIONS.filter(missionOpen);const m=open.find(x=>!S.hosp.done[x.id])||pick(open);if(!m)return false;S.hosp.callM=mo;saveGame(true);softPlay('buy');
+function hospitalCall(){if(window.__qaNoCall||S.mp||S.party)return false;const mo=monthOf(S.day);if(S.day<3||S.hosp.callM===mo||S.hosp.lastM===mo)return false;const open=MISSIONS.filter(missionOpen);const m=open.find(x=>!S.hosp.done[x.id])||pick(open);if(!m)return false;S.hosp.callM=mo;saveGame(true);softPlay('buy');
  openModal(`<div class="sheethead"><h2>${m.hospital} ติดต่อมา</h2></div><div class="say">${sprHTML('h_hosp',100)}<p>${m.say}</p></div>
  <div class="row"><button class="btn gold" data-see="1">ดูเงื่อนไขภารกิจ</button><button class="btn plain" data-c="1">ไว้ก่อน</button></div>`);
  const b=$('#modal');b.querySelector('[data-c]').onclick=closeModal;b.querySelector('[data-see]').onclick=()=>hospitalDialog(m.id);return true;}
